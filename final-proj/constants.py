@@ -20,14 +20,13 @@ RESIZE_Y = 200
 #       Network Constructions
 CONV_LAYERS = 4
 FILTER_SHAPE = [3, 3]
-STRIDE_SHAPE = [2, 2]
+STRIDE = 2
 LSTM_UNITS = 256
 
 #       Optimizations and Convergence Tricks
 INPUT_KEEP_PROB = .5
 OUTPUT_KEEP_PROB = .5
 
-
 # Debugging
-DEBUG = True
+DEBUG = False
 RANDOM_POLICY = False
