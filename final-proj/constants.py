@@ -6,8 +6,8 @@ Description: Constants for network and other parameters.
 # Slither.io params
 #       Set in stone
 GAME_ID = 'internet.SlitherIO-v0'
-WINDOW_START = (18, 84)
-WINDOW_END = (521, 384)
+WINDOW_START = (30, 100)
+WINDOW_END = (500, 370)
 WINDOW_HEIGHT = WINDOW_END[1] - WINDOW_START[1]
 WINDOW_WIDTH = WINDOW_END[0] - WINDOW_START[0]
 NUM_ACTIONS = 3 # x coord, y coord, lmb click or not
@@ -36,3 +36,4 @@ MAX_GRAD_NORM = 40.0
 # Debugging
 DEBUG = False
 RANDOM_POLICY = False
+CKPT_PATH = 'data/ckpt/'

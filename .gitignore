@@ -2,3 +2,9 @@
 *png
 *swp
 log
+*ckpt
+*ckpt.meta
+*checkpoint*
+backups/
+*.data
+*.csv

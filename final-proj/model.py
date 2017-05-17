@@ -145,6 +145,9 @@ class Policy(object):
         opt = tf.train.AdamOptimizer(c.LEARNING_RATE)
         self.train = opt.apply_gradients(grads_and_vars)
 
+        # Saving op
+        self.saver = tf.train.Saver(tf.global_variables())
+
     def get_initial_features(self):
         """
         Gets the initial feature state for the lstm for episode reset.

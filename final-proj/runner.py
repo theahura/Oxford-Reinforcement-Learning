@@ -5,6 +5,7 @@ Description: Runner for slither.io AI.
 
 import time
 import logging
+import os
 
 import gym
 import numpy as np
@@ -20,16 +21,31 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.info("IN GAME")
 
+def get_model(session, env):
+    """
+    Loads the tf model or inits a new one.
+    """
+    policy = model.Policy(env.observation_space.shape, c.NUM_ACTIONS)
+
+    ckpt = tf.train.get_checkpoint_state(c.CKPT_PATH)
+
+    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
+        logger.info("LOADING OLD MODEL")
+        policy.saver.restore(session, ckpt.model_checkpoint_path)
+    else:
+        logger.info("LOADING NEW MODEL")
+        session.run(tf.global_variables_initializer())
+    return policy
+
 def run():
     """ Runs the slitherio AI. """
     logger.info("STARTING FROM THE TOP")
     env = envs.create_env()
     observation_n = env.reset()
-    policy = model.Policy(env.observation_space.shape, c.NUM_ACTIONS)
+
+    checkpoint_path = os.path.join(c.CKPT_PATH, 'slither.ckpt')
 
     start = time.time()
-
-    init = tf.global_variables_initializer()
 
     last_ob = 0
     reward = [0]
@@ -45,7 +61,8 @@ def run():
 
     logger.info("STARTING FROM THE TF")
     with tf.Session() as sess, sess.as_default():
-        sess.run(init)
+
+        policy = get_model(sess, env)
 
         while True:
 
@@ -57,12 +74,9 @@ def run():
                     adv = reward[0] + c.GAMMA * last_value
                     if done:
                         logger.info("FUCKED UP")
-                        total_reward = -10000
-                        policy.update_model(last_ob, last_state[0], last_state[1],
-                                            adv, [total_reward])
-                    else:
-                        policy.update_model(last_ob, last_state[0], last_state[1],
-                                            adv, [total_reward])
+                        total_reward = -100000
+                    policy.update_model(last_ob, last_state[0], last_state[1],
+                                        adv, [total_reward])
 
                 c_in, h_in = policy.get_initial_features()
 
@@ -75,8 +89,10 @@ def run():
                 last_ob = observation_n
                 last_value = output[1]
                 last_state = (c_in, h_in)
-                logger.info("RESETTNIG TOTAL REWARD")
-                total_reward = 0
+                logger.info("RESETTNIG TOTAL REWARD AND SAVING")
+                total_reward = -10.0
+
+                policy.saver.save(sess, checkpoint_path)
 
             if c.DEBUG:
                 logger.info("Observation before shape: %s ",
@@ -89,7 +105,7 @@ def run():
 
             observation_n, reward, [done], _ = env.step(action_n)
 
-            total_reward += reward[0]
+            total_reward += (reward[0]*10)
 
             logger.info("DEBUGGING STUFF REW: %s", str(reward))
             logger.info("DEBUGGING STUFF TOT: %s", str(total_reward))
