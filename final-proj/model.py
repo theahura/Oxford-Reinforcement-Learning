@@ -117,7 +117,11 @@ class Policy(object):
 
         # As per A3C, logits and value function both are represented by linear
         # layers on top of the rest of the network
-        self.logits = tf.squeeze(linear(x, action_size, "action"))
+        logits = tf.squeeze(linear(x, action_size, "action"))
+        #self.logits = tf.div(tf.subtract(logits, tf.reduce_min(logits)),
+        #                     tf.subtract(tf.reduce_max(logits),
+        #                                 tf.reduce_min(logits)))
+        self.logits = tf.sigmoid(logits)
 
         # Also define the value function, for a single output
         self.vf = tf.reshape(linear(x, 1, "value"), [-1])
@@ -126,6 +130,25 @@ class Policy(object):
         self.state_out = [state_c[:1, :], state_h[:1, :]]
         self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                           tf.get_variable_scope().name)
+
+        # TF graph for updating the model
+        self.adv = tf.placeholder(tf.float32, [None], name='adv')
+        self.r = tf.placeholder(tf.float32, [None], name='r')
+
+        log_prob = tf.nn.log_softmax(self.logits)
+        prob = tf.nn.softmax(self.logits)
+        pi_loss = -tf.reduce_sum(log_prob * self.adv)
+        vf_loss = c.VF_LOSS_CONST * tf.reduce_sum(tf.square(self.vf - self.r))
+        entropy = - tf.reduce_sum(prob * log_prob)
+
+        self.loss = pi_loss + c.VF_LOSS_CONST * vf_loss - entropy * c.ENT_CONST
+        grads = tf.gradients(self.loss, self.var_list)
+        grads, _ = tf.clip_by_global_norm(grads, c.MAX_GRAD_NORM)
+
+        grads_and_vars = list(zip(grads, self.var_list))
+
+        opt = tf.train.AdamOptimizer(c.LEARNING_RATE)
+        self.train = opt.apply_gradients(grads_and_vars)
 
     def get_initial_features(self):
         """
@@ -164,9 +187,12 @@ class Policy(object):
         return sess.run(self.vf, {self.x: [ob], self.c_in: c_in,
                                   self.h_in: h_in})[0]
 
-    def update_model(self, reward):
+    def update_model(self, ob, c_in, h_in, adv, reward):
         """
         Calculates gradients from the reward and updates the tf model
         accordingly.
         """
-        pass
+        sess = tf.get_default_session()
+        return sess.run(self.train, {self.x: ob, self.c_in: c_in,
+                                     self.h_in: h_in, self.adv: adv,
+                                     self.r: reward})

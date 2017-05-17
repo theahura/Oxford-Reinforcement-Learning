@@ -22,10 +22,16 @@ CONV_LAYERS = 4
 FILTER_SHAPE = [3, 3]
 STRIDE = 2
 LSTM_UNITS = 256
-
+#       A3C Params
+VF_LOSS_CONST = 0.5
+ENT_CONST = 0.01
+LEARNING_RATE = 1e-4
+GAMMA = 0.99
+LAMBDA = 1.0
 #       Optimizations and Convergence Tricks
 INPUT_KEEP_PROB = .5
 OUTPUT_KEEP_PROB = .5
+MAX_GRAD_NORM = 40.0
 
 # Debugging
 DEBUG = False
