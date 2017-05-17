@@ -18,6 +18,7 @@ import model
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+logger.info("IN GAME")
 
 def run():
     """ Runs the slitherio AI. """
@@ -32,8 +33,10 @@ def run():
 
     last_ob = 0
     reward = [0]
+    total_reward = 0
     last_value = 0
     last_state = (0, 0)
+    done = False
     adv = 0.0
 
     x = 0
@@ -52,8 +55,14 @@ def run():
 
                 if last_ob:
                     adv = reward[0] + c.GAMMA * last_value
-                    policy.update_model(last_ob, last_state[0], last_state[1],
-                                        adv, reward)
+                    if done:
+                        logger.info("FUCKED UP")
+                        total_reward = -10000
+                        policy.update_model(last_ob, last_state[0], last_state[1],
+                                            adv, [total_reward])
+                    else:
+                        policy.update_model(last_ob, last_state[0], last_state[1],
+                                            adv, [total_reward])
 
                 c_in, h_in = policy.get_initial_features()
 
@@ -66,6 +75,8 @@ def run():
                 last_ob = observation_n
                 last_value = output[1]
                 last_state = (c_in, h_in)
+                logger.info("RESETTNIG TOTAL REWARD")
+                total_reward = 0
 
             if c.DEBUG:
                 logger.info("Observation before shape: %s ",
@@ -76,11 +87,14 @@ def run():
 
             action_n = [[universe.spaces.PointerEvent(x, y, click)]]
 
-            observation_n, reward, done, _ = env.step(action_n)
+            observation_n, reward, [done], _ = env.step(action_n)
 
-            logger.info("DEBUGGING STUFF OB: %s", str(reward))
+            total_reward += reward[0]
+
             logger.info("DEBUGGING STUFF REW: %s", str(reward))
+            logger.info("DEBUGGING STUFF TOT: %s", str(total_reward))
             logger.info("DEBUGGING STUFF DONE: %s", str(done))
+            logger.info("DEBUGGING STUFF POS: %s", str((x, y, click)))
         env.render()
 
 if __name__ == '__main__':

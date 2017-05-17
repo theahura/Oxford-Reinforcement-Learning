@@ -6,16 +6,12 @@ directly) from the implementation there, though this makes sense as the
 framework is more or less the same but the variables can change.
 """
 
-import logging
 import random
 import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.rnn as rnn
 
 import constants as c
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 def normalized_columns_initializer(std=1.0):
     """
@@ -64,7 +60,6 @@ def linear(x, size, name):
     """
     Defines a linear layer in tf.
     """
-    logger.info("shape: %s", str(x.get_shape()))
     w = tf.get_variable(name + "/w", [x.get_shape()[1], size])
     b = tf.get_variable(name + "/b", [size],
                         initializer=tf.constant_initializer(0))
