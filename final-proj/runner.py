@@ -21,22 +21,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.info("IN GAME")
 
-def get_model(session, env):
-    """
-    Loads the tf model or inits a new one.
-    """
-    policy = model.Policy(env.observation_space.shape, c.NUM_ACTIONS)
-
-    ckpt = tf.train.get_checkpoint_state(c.CKPT_PATH)
-
-    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
-        logger.info("LOADING OLD MODEL")
-        policy.saver.restore(session, ckpt.model_checkpoint_path)
-    else:
-        logger.info("LOADING NEW MODEL")
-        session.run(tf.global_variables_initializer())
-    return policy
-
 def run():
     """ Runs the slitherio AI. """
     logger.info("STARTING FROM THE TOP")
@@ -61,9 +45,6 @@ def run():
 
     logger.info("STARTING FROM THE TF")
     with tf.Session() as sess, sess.as_default():
-
-        policy = get_model(sess, env)
-
         while True:
 
             logger.info("STILL IN THE WHILE LOOP")

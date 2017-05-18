@@ -56,11 +56,12 @@ def conv2d(x, num_filters, name, filter_size=(3, 3), stride=1):
 
         return tf.nn.conv2d(x, w, stride_shape, padding="SAME") + b
 
-def linear(x, size, name):
+def linear(x, size, name, initializer):
     """
     Defines a linear layer in tf.
     """
-    w = tf.get_variable(name + "/w", [x.get_shape()[1], size])
+    w = tf.get_variable(name + "/w", [x.get_shape()[1], size],
+                        initializer=initializer)
     b = tf.get_variable(name + "/b", [size],
                         initializer=tf.constant_initializer(0))
     return tf.matmul(x, w) + b
@@ -70,7 +71,7 @@ class Policy(object):
     NN that describes the policy for the agent.
     """
 
-    def __init__(self, input_shape, action_size):
+    def __init__(self, input_shape, action_size, scope):
         """
         Sets up the model.
             Input - one frame, shape (batch=1, height, width, channel=1)
@@ -112,41 +113,58 @@ class Policy(object):
 
         # As per A3C, logits and value function both are represented by linear
         # layers on top of the rest of the network
-        logits = tf.squeeze(linear(x, action_size, "action"))
-        #self.logits = tf.div(tf.subtract(logits, tf.reduce_min(logits)),
-        #                     tf.subtract(tf.reduce_max(logits),
-        #                                 tf.reduce_min(logits)))
+        logits = tf.squeeze(linear(x, action_size, "action",
+                                   normalized_columns_initializer(0.01)))
+
+        # Want an output between 0 and 1
         self.logits = tf.sigmoid(logits)
 
-        # Also define the value function, for a single output
-        self.vf = tf.reshape(linear(x, 1, "value"), [-1])
+        # Also define the value function
+        self.vf = tf.reshape(linear(x, 1, "value",
+                                    normalized_columns_initializer(1.0)), [-1])
 
         # Other stuff
         self.state_out = [state_c[:1, :], state_h[:1, :]]
         self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                           tf.get_variable_scope().name)
 
-        # TF graph for updating the model
-        self.adv = tf.placeholder(tf.float32, [None], name='adv')
-        self.r = tf.placeholder(tf.float32, [None], name='r')
+        if scope != 'global':
+            # TF graph for getting the gradients of the local model.
+            # TODO: make this discrete
+            self.adv = tf.placeholder(tf.float32, [None], name='adv')
+            self.r = tf.placeholder(tf.float32, [None], name='r')
 
-        log_prob = tf.nn.log_softmax(self.logits)
-        prob = tf.nn.softmax(self.logits)
-        pi_loss = -tf.reduce_sum(log_prob * self.adv)
-        vf_loss = c.VF_LOSS_CONST * tf.reduce_sum(tf.square(self.vf - self.r))
-        entropy = - tf.reduce_sum(prob * log_prob)
+            log_prob = tf.nn.log_softmax(self.logits)
+            prob = tf.nn.softmax(self.logits)
+            pi_loss = -tf.reduce_sum(log_prob * self.adv)
+            vf_loss = c.VF_LOSS_CONST * tf.reduce_sum(tf.square(self.vf - self.r))
+            entropy = - tf.reduce_sum(prob * log_prob)
 
-        self.loss = pi_loss + c.VF_LOSS_CONST * vf_loss - entropy * c.ENT_CONST
-        grads = tf.gradients(self.loss, self.var_list)
-        grads, _ = tf.clip_by_global_norm(grads, c.MAX_GRAD_NORM)
+            self.loss = pi_loss + c.VF_LOSS_CONST * vf_loss - entropy * c.ENT_CONST
+            grads = tf.gradients(self.loss, self.var_list)
+            grads, _ = tf.clip_by_global_norm(grads, c.MAX_GRAD_NORM)
 
-        grads_and_vars = list(zip(grads, self.var_list))
+            self.get_grads = grads
 
-        opt = tf.train.AdamOptimizer(c.LEARNING_RATE)
-        self.train = opt.apply_gradients(grads_and_vars)
+            # Summary ops
+            bs = tf.to_float(tf.shape(self.x)[0])
+            tf.summary.scalar("model/policy_loss", pi_loss / bs)
+            tf.summary.scalar("model/value_loss", vf_loss / bs)
+            tf.summary.scalar("model/entropy", entropy / bs)
+            tf.summary.image("model/state", self.x)
+            tf.summary.scalar("model/grad_global_norm", tf.global_norm(grads))
+            tf.summary.scalar("model/var_global_norm",
+                              tf.global_norm(self.var_list))
+            self.summary_op = tf.summary.merge_all()
+        else:
+            # Part of the graph to update the global network
+            self.input_gradients = tf.placeholder(tf.float32, [None])
+            grads_and_vars = list(zip(self.input_gradients, self.var_list))
+            opt = tf.train.AdamOptimizer(c.LEARNING_RATE)
+            self.train = opt.apply_gradients(grads_and_vars)
 
-        # Saving op
-        self.saver = tf.train.Saver(tf.global_variables())
+            # Saving op
+            self.saver = tf.train.Saver(tf.global_variables())
 
     def get_initial_features(self):
         """
@@ -185,12 +203,29 @@ class Policy(object):
         return sess.run(self.vf, {self.x: [ob], self.c_in: c_in,
                                   self.h_in: h_in})[0]
 
-    def update_model(self, ob, c_in, h_in, adv, reward):
+    def get_gradients(self, ob, c_in, h_in, adv, reward, summary=False):
         """
-        Calculates gradients from the reward and updates the tf model
-        accordingly.
+        Calculates gradients from the reward based on A3C.
+        Meant to be called from local networks.
         """
         sess = tf.get_default_session()
-        return sess.run(self.train, {self.x: ob, self.c_in: c_in,
-                                     self.h_in: h_in, self.adv: adv,
-                                     self.r: reward})
+        outputs = [self.get_grads]
+
+        if summary:
+            outputs = outputs + [self.summary_op]
+
+        inputs = {
+            self.x: ob,
+            self.c_in: c_in,
+            self.h_in: h_in,
+            self.r: reward,
+            self.adv: adv
+        }
+        return sess.run(outputs, inputs)
+
+    def update_model(self, gradients):
+        """
+        Updates the model. Meant to be called from the global network.
+        """
+        sess = tf.get_default_session()
+        return sess.run(self.train, {self.input_gradients: gradients})

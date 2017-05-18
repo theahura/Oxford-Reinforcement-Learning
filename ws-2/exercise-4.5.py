@@ -10,19 +10,20 @@ import numpy as np
 from scipy.stats import poisson
 
 # System vars
-RENT_PRICE = 10
-COST_TO_MOVE_CARS = 2
-MAX_CARS = 20
-MAX_CARS_MOVED = 5
+RENT_PRICE = 5
+COST_TO_MOVE_CARS = 1
+MAX_CARS = 10
+MAX_CARS_MOVED = 2
 ACTIONS_AVAILABLE = MAX_CARS_MOVED*2 + 1
 GAMMA = 0.9
 LAMBDAS = {
-    'req_one': 3,
-    'req_two': 4,
-    'ret_one': 3,
-    'ret_two': 2
+    'req_one': 1,
+    'req_two': 2,
+    'ret_one': 1,
+    'ret_two': 1
 }
 DEBUG_STEPS = 100
+EPS = 5
 
 def get_reward(r_one, r_two, action):
     """
@@ -136,7 +137,15 @@ pi = np.zeros((MAX_CARS + 1, MAX_CARS + 1), np.int)
 num_steps = 0
 while True:
     # Q update
-    q = update_q(q, pi)
+    substeps = 0
+    while True:
+        temp = np.copy(q)
+        q = update_q(q, pi)
+        if np.absolute(np.subtract(temp, q)).max() < EPS:
+            break
+        if substeps % DEBUG_STEPS == 0:
+            print_q(q)
+        substeps += 1
     print_q(q)
     # Policy Update
     temp = np.copy(pi)

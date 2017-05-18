@@ -37,3 +37,4 @@ MAX_GRAD_NORM = 40.0
 DEBUG = False
 RANDOM_POLICY = False
 CKPT_PATH = 'data/ckpt/'
+DEBUG_STEPS = 10
