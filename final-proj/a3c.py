@@ -5,125 +5,140 @@ Description: A3C Algorithm for async training on single multi-core CPU.
 
 import logging
 import multiprocessing
+import os
+import Queue
 
+import numpy as np
+import scipy
 import tensorflow as tf
 
 import constants as c
-from model import Policy
-import runner
+import model
+from worker import Worker
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-def get_model(session, env, scope):
+def discount(x, gamma):
     """
-    Loads the tf model or inits a new one.
+    Discounts x. Part of adv calculation. See starter agent.
     """
-    policy = Policy(env.observation_space.shape, c.NUM_ACTIONS, scope)
+    return scipy.signal.lfilter([1], [1, -gamma], x[::-1], axis=0)[::-1]
 
-    ckpt = tf.train.get_checkpoint_state(c.CKPT_PATH)
+def process_rollout(rollout):
+    """
+    Given a rollout, get returns and advantage
+    """
+    batch_si = np.asarray(rollout.states)
+    batch_a = np.asarray(rollout.actions)
+    rewards = np.asarray(rollout.rewards)
+    vpred_t = np.asarray(rollout.values + [rollout.r])
 
-    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
-        logger.info("LOADING OLD MODEL")
-        policy.saver.restore(session, ckpt.model_checkpoint_path)
-    else:
-        logger.info("LOADING NEW MODEL")
-        session.run(tf.global_variables_initializer())
-    return policy
+    rewards_plus_v = np.asarray(rollout.rewards + [rollout.r])
+    batch_r = discount(rewards_plus_v, c.GAMMA)[:-1]
+    delta_t = rewards + c.GAMMA * vpred_t[1:] - vpred_t[:-1]
+    batch_adv = discount(delta_t, c.GAMMA * c.LAMBDA)
+
+    features = rollout.features[0]
+    batch = {
+        'si': batch_si,
+        'a': batch_a,
+        'adv': batch_adv,
+        'r': batch_r,
+        'terminal': rollout.terminal,
+        'features': features,
+        'worker': rollout.worker
+    }
+    return batch
 
 class A3C(object):
     """
     Implementation of A3C. Inspired by starter agent.
     """
 
-    def __init__(self, env, workers):
+    def __init__(self):
         """
         Set up global network sync graph.
         """
-        self.env = env
+        self.global_steps = 0
+        self.global_q = Queue.Queue()
         sess = tf.get_default_session()
         with tf.device('/cpu:0'):
-            with tf.variable_scope("global"):
-                self.global_network = get_model(sess, env, 'global')
-                self.global_step = tf.get_variable(
-                    "global_step", [], tf.int32,
-                    initializer=tf.constant_initializer(0, dtype=tf.int32),
-                    trainable=False)
+            with tf.variable_scope('global'):
+                self.global_network = model.get_model(sess, 'global')
 
-        num_workers = workers if workers else multiprocessing.cpu_count()
+            num_workers = multiprocessing.cpu_count() - 1
+            if c.NUM_WORKERS:
+                num_workers = c.NUM_WORKERS - 1
 
-        for i in range(num_workers):
-            # Run worker threads
-            #   in each worker thread call runner
-            # Have a way to get relevant experiences from workers (shared queue?)
+            self.workers = []
+            for i in range(num_workers):
+                with tf.variable_scope('worker{}'.format(i)):
+                    self.workers.append(Worker(sess, self.global_q, i))
 
-        with tf.device(worker_device):
-            with tf.variable_scope("local"):
-                self.local_network = pi = get_model(sess, env, 'local')
-                pi.global_step = self.global_step
-
-            # Runner that interacts with the environment
-            self.runner = RunnerThread(env, pi, 20, visualize)
-
-            # copy weights from the parameter server to the local model
-            self.sync = tf.group(*[v1.assign(v2) for
-                                   v1, v2 in zip(pi.var_list,
-                                                 self.global_network.var_list)])
-
-            inc_step = self.global_step.assign_add(tf.shape(pi.x)[0])
-            self.local_steps = 0
-
-    def start(self, sess):
-        self.runner.start_runner(sess)
+    def start_workers(self):
+        for worker in self.workers:
+            worker.start_runner()
 
     def pull_batch_from_queue(self):
         """
-        self explanatory:  take a rollout from the queue of the thread runner.
+        Gets all of the experiences available on call
         """
-        rollout = self.runner.queue.get(timeout=600.0)
+        rollout = self.global_q.get(timeout=600.0)
         while not rollout.terminal:
             try:
-                rollout.extend(self.runner.queue.get_nowait())
-            except queue.Empty:
+                rollout.extend(self.global_q.get_nowait())
+            except Queue.Empty:
                 break
         return rollout
 
-    def process(self, sess):
+    def process(self):
         """
-        process grabs a rollout that's been produced by the thread runner,
+        process grabs a rollout that's been produced by a thread runner,
         and updates the parameters.  The update is then sent to the parameter
         server.
         """
-
-        # copy weights from shared to local
-        sess.run(self.sync)
+        sess = tf.get_default_session()
 
         # Get the latest experiences to process
         rollout = self.pull_batch_from_queue()
-        batch = process_rollout(rollout, gamma=0.99, lambda_=1.0)
+        batch = process_rollout(rollout)
 
         # Debug every n steps
-        should_compute_summary = self.task == 0 and (
-            self.local_steps % c.DEBUG_STEPS == 0)
+        should_compute_summary = self.global_steps % c.DEBUG_STEPS == 0
+
+        worker = self.workers[batch['worker']]
 
         # Get the gradients for the global network update from the local network
         # using the latest experiences
-        fetched = self.local_network.get_gradients(batch.si, batch.features[0],
-                                                   batch.features[1],
-                                                   batch.adv, batch.r,
-                                                   should_compute_summary)
+        fetched = worker.policy.get_gradients(batch['si'], batch['a'],
+                                              batch['features'][0],
+                                              batch['features'][1],
+                                              batch['adv'], batch['r'],
+                                              should_compute_summary)
 
         gradients = fetched[0]
 
         # Actually update the global network
         update = self.global_network.update_model(gradients)
 
-        # Global and local networks have one more experience
-        sess.run(self.global_step)
-        self.local_steps += 1
+        # Copy the changes back down to the local network
+        sync = tf.group(*[v1.assign(v2) for v1, v2 in
+                          zip(worker.policy.var_list,
+                              self.global_network.var_list)])
+        sess.run(sync)
+
+        # Global network has one more experience
+        self.global_steps += 1
+
+        if self.global_steps % c.STEPS_TO_SAVE == 0:
+            checkpoint_path = os.path.join(c.CKPT_PATH, 'slither.ckpt')
+            self.global_network.saver.save(sess, checkpoint_path,
+                                           global_step=self.global_steps)
 
         # Logs
-        logger.info("Update: %s", str(update))
+        logger.info("Update step: %d, Update: %s", self.global_steps,
+                    str(update))
         if should_compute_summary:
             logger.info("Summary: %s", str(fetched[0]))
             logger.info("Gradients: %s", str(fetched[-1]))

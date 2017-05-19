@@ -13,6 +13,20 @@ import tensorflow.contrib.rnn as rnn
 
 import constants as c
 
+def get_model(session, scope):
+    """
+    Loads the tf model or inits a new one.
+    """
+    policy = Policy(c.OBSERVATION_SPACE, c.NUM_ACTIONS, scope)
+
+    ckpt = tf.train.get_checkpoint_state(c.CKPT_PATH)
+
+    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
+        policy.saver.restore(session, ckpt.model_checkpoint_path)
+    else:
+        session.run(tf.global_variables_initializer())
+    return policy
+
 def normalized_columns_initializer(std=1.0):
     """
     Normalized initializer. See startup agent.
@@ -66,6 +80,14 @@ def linear(x, size, name, initializer):
                         initializer=tf.constant_initializer(0))
     return tf.matmul(x, w) + b
 
+def categorical_sample(logits, d):
+    """
+    Gets the actual output id.
+    """
+    value = tf.squeeze(tf.multinomial(
+        logits - tf.reduce_max(logits, [1], keep_dims=True), 1), [1])
+    return tf.one_hot(value, d)
+
 class Policy(object):
     """
     NN that describes the policy for the agent.
@@ -84,8 +106,8 @@ class Policy(object):
         self.x = x = tf.placeholder(tf.float32, [None] + list(input_shape))
 
         for i in xrange(c.CONV_LAYERS):
-            x = tf.nn.elu(conv2d(x, 32, 'l{}'.format(i + 1), c.FILTER_SHAPE,
-                                 c.STRIDE))
+            x = tf.nn.elu(conv2d(x, c.OUTPUT_CHANNELS, 'l{}'.format(i + 1),
+                                 c.FILTER_SHAPE, c.STRIDE))
 
         # Add a time dimension
         x = tf.expand_dims(flatten(x), [0])
@@ -94,6 +116,8 @@ class Policy(object):
         cell = tf.contrib.rnn.LSTMCell(c.LSTM_UNITS, state_is_tuple=True)
         cell = tf.contrib.rnn.DropoutWrapper(cell, c.INPUT_KEEP_PROB,
                                              c.OUTPUT_KEEP_PROB)
+
+        self.state_size = cell.state_size
 
         # Set up the initial state for episode resets later on
         self.c_init = np.zeros((1, cell.state_size.c), np.float32)
@@ -113,11 +137,10 @@ class Policy(object):
 
         # As per A3C, logits and value function both are represented by linear
         # layers on top of the rest of the network
-        logits = tf.squeeze(linear(x, action_size, "action",
-                                   normalized_columns_initializer(0.01)))
+        self.logits = linear(x, action_size, "action",
+                             normalized_columns_initializer(0.01))
 
-        # Want an output between 0 and 1
-        self.logits = tf.sigmoid(logits)
+        self.action = categorical_sample(self.logits, action_size)[0, :]
 
         # Also define the value function
         self.vf = tf.reshape(linear(x, 1, "value",
@@ -130,14 +153,17 @@ class Policy(object):
 
         if scope != 'global':
             # TF graph for getting the gradients of the local model.
-            # TODO: make this discrete
+            self.ac = tf.placeholder(tf.float32, [None, action_size],
+                                     name="ac")
             self.adv = tf.placeholder(tf.float32, [None], name='adv')
             self.r = tf.placeholder(tf.float32, [None], name='r')
 
             log_prob = tf.nn.log_softmax(self.logits)
             prob = tf.nn.softmax(self.logits)
-            pi_loss = -tf.reduce_sum(log_prob * self.adv)
-            vf_loss = c.VF_LOSS_CONST * tf.reduce_sum(tf.square(self.vf - self.r))
+            pi_loss = -tf.reduce_sum(tf.reduce_sum(
+                log_prob * self.ac, [1]) * self.adv)
+            vf_loss = c.VF_LOSS_CONST * tf.reduce_sum(tf.square(
+                self.vf - self.r))
             entropy = - tf.reduce_sum(prob * log_prob)
 
             self.loss = pi_loss + c.VF_LOSS_CONST * vf_loss - entropy * c.ENT_CONST
@@ -157,14 +183,10 @@ class Policy(object):
                               tf.global_norm(self.var_list))
             self.summary_op = tf.summary.merge_all()
         else:
-            # Part of the graph to update the global network
-            self.input_gradients = tf.placeholder(tf.float32, [None])
-            grads_and_vars = list(zip(self.input_gradients, self.var_list))
-            opt = tf.train.AdamOptimizer(c.LEARNING_RATE)
-            self.train = opt.apply_gradients(grads_and_vars)
-
             # Saving op
-            self.saver = tf.train.Saver(tf.global_variables())
+            vars_to_save = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                             'global')
+            self.saver = tf.train.Saver(vars_to_save)
 
     def get_initial_features(self):
         """
@@ -177,11 +199,7 @@ class Policy(object):
         Returns the actions for a given state. Specifically, returns the x,y
         position for the mouse and whether or not lmb is clicked.
         """
-        x = 0
-        y = 0
-        click = 0
-
-        if c.DEBUG or c.RANDOM_POLICY:
+        if c.DEBUG and c.RANDOM_POLICY:
             # Move randomly
             x = random.randint(c.WINDOW_START[0],
                                c.WINDOW_END[0])
@@ -192,7 +210,7 @@ class Policy(object):
             return [[x, y, click], random.randint(0, 100), [None]]
 
         sess = tf.get_default_session()
-        return sess.run([self.logits, self.vf] + self.state_out,
+        return sess.run([self.action, self.vf] + self.state_out,
                         {self.x: ob, self.c_in: c_in, self.h_in: h_in})
 
     def value(self, ob, c_in, h_in):
@@ -203,7 +221,7 @@ class Policy(object):
         return sess.run(self.vf, {self.x: [ob], self.c_in: c_in,
                                   self.h_in: h_in})[0]
 
-    def get_gradients(self, ob, c_in, h_in, adv, reward, summary=False):
+    def get_gradients(self, ob, ac, c_in, h_in, adv, reward, summary=False):
         """
         Calculates gradients from the reward based on A3C.
         Meant to be called from local networks.
@@ -216,6 +234,7 @@ class Policy(object):
 
         inputs = {
             self.x: ob,
+            self.ac: ac,
             self.c_in: c_in,
             self.h_in: h_in,
             self.r: reward,
@@ -228,4 +247,7 @@ class Policy(object):
         Updates the model. Meant to be called from the global network.
         """
         sess = tf.get_default_session()
-        return sess.run(self.train, {self.input_gradients: gradients})
+        grads_and_vars = list(zip(gradients, self.var_list))
+        opt = tf.train.AdamOptimizer(c.LEARNING_RATE)
+        train = opt.apply_gradients(grads_and_vars)
+        return sess.run(train, {})
