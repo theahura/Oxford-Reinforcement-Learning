@@ -10,7 +10,7 @@ import numpy as np
 import logging
 import universe
 from universe import vectorized
-from universe.wrappers import BlockingReset, Logger, Vision
+from universe.wrappers import BlockingReset, Logger, Vision, Unvectorize
 
 import constants as c
 
@@ -27,6 +27,7 @@ def create_env():
     env = CropScreen(env, c.WINDOW_HEIGHT, c.WINDOW_WIDTH, c.WINDOW_START[1],
                      c.WINDOW_START[0])
     env = Rescale(env)
+    env = Unvectorize(env)
     env.configure(fps=c.FPS, remotes=1)
     return env
 

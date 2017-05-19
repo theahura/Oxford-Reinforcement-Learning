@@ -211,7 +211,7 @@ class Policy(object):
 
         sess = tf.get_default_session()
         return sess.run([self.action, self.vf] + self.state_out,
-                        {self.x: ob, self.c_in: c_in, self.h_in: h_in})
+                        {self.x: [ob], self.c_in: c_in, self.h_in: h_in})
 
     def value(self, ob, c_in, h_in):
         """
