@@ -6,12 +6,17 @@ directly) from the implementation there, though this makes sense as the
 framework is more or less the same but the variables can change.
 """
 
+import logging
 import random
+
 import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.rnn as rnn
 
 import constants as c
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 def get_model(session, scope):
     """
@@ -21,9 +26,12 @@ def get_model(session, scope):
 
     ckpt = tf.train.get_checkpoint_state(c.CKPT_PATH)
 
-    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
+    if scope == 'global' and ckpt and tf.train.checkpoint_exists(
+            ckpt.model_checkpoint_path):
+        logger.info("GOT OLD MODEL FOR SCOPE %s", scope)
         policy.saver.restore(session, ckpt.model_checkpoint_path)
     else:
+        logger.info("STARTING NEW MODEL FOR SCOPE %s", scope)
         session.run(tf.global_variables_initializer())
     return policy
 

@@ -74,11 +74,22 @@ class A3C(object):
             self.workers = []
             for i in range(num_workers):
                 with tf.variable_scope('worker{}'.format(i)):
-                    self.workers.append(Worker(sess, self.global_q, i))
+                    # Create a new worker thread
+                    worker = Worker(sess, self.global_q, i)
+
+                    # And sync it to the global thread
+                    self.sync = tf.group(*[v1.assign(v2) for v1, v2 in
+                                           zip(worker.policy.var_list,
+                                               self.global_network.var_list)])
+                    sess.run(self.sync)
+                    self.workers.append(worker)
 
         self.summary_writer = tf.summary.FileWriter(c.LOGDIR)
 
     def start_workers(self):
+        """
+        Kicks off all the worker threads after init.
+        """
         for worker in self.workers:
             worker.start_runner()
 
@@ -130,10 +141,7 @@ class A3C(object):
             logger.info("GLOBAL UPDATE DONE")
 
         # Copy the changes back down to the local network
-        sync = tf.group(*[v1.assign(v2) for v1, v2 in
-                          zip(worker.policy.var_list,
-                              self.global_network.var_list)])
-        sess.run(sync)
+        sess.run(self.sync)
 
         if c.DEBUG:
             logger.info("GLOBAL SYNC FINISHED")
