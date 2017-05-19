@@ -8,7 +8,9 @@ from a3c import A3C
 
 
 sess = tf.Session()
+init = tf.global_variables_initializer()
 with sess.as_default():
+    sess.run(init)
     # Init networks and everything else
     a3c = A3C()
 

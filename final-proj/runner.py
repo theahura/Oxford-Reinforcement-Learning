@@ -74,13 +74,14 @@ def run_env(env, policy, worker_index):
             translated_action = [universe.spaces.PointerEvent(x, y, click)]
 
             if c.DEBUG:
-                logger.info("TRANSLATED ACTION: %s", str(translated_action))
+                logger.info("WORKER %d TRANSLATED ACTION: %s", worker_index,
+                            str(translated_action))
             # Run the action
             state, reward, terminal, info = env.step(translated_action)
 
             if c.DEBUG:
-                logger.info("REW: %s", str(reward))
-                logger.info("TERM: %s", str(terminal))
+                logger.info("WORKER %d REW: %s", worker_index, str(reward))
+                logger.info("WORKER %d TERM: %s", worker_index, str(terminal))
 
             # Process the action results
             rollout.add(last_state, action, reward, value, terminal,
@@ -88,7 +89,8 @@ def run_env(env, policy, worker_index):
             rewards += reward
 
             if c.DEBUG:
-                logger.info("TOTAL REW: %s", str(rewards))
+                logger.info("WORKER %d TOTAL REW: %s", worker_index,
+                            str(rewards))
 
             # Reset for next loop
             last_state = state

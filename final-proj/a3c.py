@@ -98,12 +98,18 @@ class A3C(object):
         and updates the parameters.  The update is then sent to the parameter
         server.
         """
+
+        if c.DEBUG:
+            logger.info("GLOBAL PROCESS STARTED")
+
         sess = tf.get_default_session()
 
         # Get the latest experiences to process
         rollout = self.pull_batch_from_queue()
         batch = process_rollout(rollout)
 
+        if c.DEBUG:
+            logger.info("GLOBAL BATCH RECEIVED")
         # Debug every n steps
         should_compute_summary = self.global_steps % c.DEBUG_STEPS == 0
 
@@ -119,14 +125,23 @@ class A3C(object):
 
         gradients = fetched[0]
 
+        if c.DEBUG:
+            logger.info("GLOBAL GRADS RECEIVED")
+
         # Actually update the global network
         update = self.global_network.update_model(gradients)
+
+        if c.DEBUG:
+            logger.info("GLOBAL UPDATE DONE")
 
         # Copy the changes back down to the local network
         sync = tf.group(*[v1.assign(v2) for v1, v2 in
                           zip(worker.policy.var_list,
                               self.global_network.var_list)])
         sess.run(sync)
+
+        if c.DEBUG:
+            logger.info("GLOBAL SYNC FINISHED")
 
         # Global network has one more experience
         self.global_steps += 1
