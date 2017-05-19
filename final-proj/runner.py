@@ -73,13 +73,13 @@ def run_env(env, policy, worker_index):
             click = translated_action[1]
             translated_action = [universe.spaces.PointerEvent(x, y, click)]
 
-            if c.DEBUG:
+            if c.WORKER_DEBUG:
                 logger.info("WORKER %d TRANSLATED ACTION: %s", worker_index,
                             str(translated_action))
             # Run the action
             state, reward, terminal, info = env.step(translated_action)
 
-            if c.DEBUG:
+            if c.WORKER_DEBUG:
                 logger.info("WORKER %d REW: %s", worker_index, str(reward))
                 logger.info("WORKER %d TERM: %s", worker_index, str(terminal))
 
@@ -88,7 +88,7 @@ def run_env(env, policy, worker_index):
                         (last_c_in, last_h_in))
             rewards += reward
 
-            if c.DEBUG:
+            if c.WORKER_DEBUG:
                 logger.info("WORKER %d TOTAL REW: %s", worker_index,
                             str(rewards))
 

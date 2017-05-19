@@ -43,11 +43,14 @@ MAX_GRAD_NORM = 40.0
 
 # Misc
 STEPS_TO_SAVE = 5 # saves every five lives
-NUM_WORKERS = 2
+NUM_WORKERS = 0
 
 # Debugging
 DEBUG = True
+GLOBAL_DEBUG = True
+MODEL_DEBUG = False
+WORKER_DEBUG = False
 RANDOM_POLICY = False
 CKPT_PATH = 'data/ckpt/'
 LOGDIR = 'data/logs/'
-DEBUG_STEPS = 10
+DEBUG_STEPS = 2

@@ -111,7 +111,8 @@ class Policy(object):
             Linear - convert LSTM output to actions
         """
         # Need to add an extra dim to account for batch later
-        self.x = x = tf.placeholder(tf.float32, [None] + list(input_shape))
+        self.x = x = tf.placeholder(tf.float32, [None] + list(input_shape),
+                                    name="x")
 
         for i in xrange(c.CONV_LAYERS):
             x = tf.nn.elu(conv2d(x, c.OUTPUT_CHANNELS, 'l{}'.format(i + 1),
@@ -132,8 +133,8 @@ class Policy(object):
         self.h_init = np.zeros((1, cell.state_size.h), np.float32)
 
         # Need to hold the state of the LSTM for inputs from the previous frame
-        self.c_in = tf.placeholder(tf.float32, [1, cell.state_size.c])
-        self.h_in = tf.placeholder(tf.float32, [1, cell.state_size.h])
+        self.c_in = tf.placeholder(tf.float32, [1, cell.state_size.c], name="c")
+        self.h_in = tf.placeholder(tf.float32, [1, cell.state_size.h], name="h")
         state_in = rnn.LSTMStateTuple(self.c_in, self.h_in)
 
         outputs, (state_c, state_h) = tf.nn.dynamic_rnn(
@@ -254,4 +255,8 @@ class Policy(object):
             self.r: reward,
             self.adv: adv
         }
-        return sess.run(outputs, inputs)
+
+        if c.MODEL_DEBUG:
+            logger.info("WHAT: %s", str(inputs))
+
+        return sess.run(outputs, feed_dict=inputs)

@@ -112,7 +112,7 @@ class A3C(object):
         server.
         """
 
-        if c.DEBUG:
+        if c.GLOBAL_DEBUG:
             logger.info("GLOBAL PROCESS STARTED")
 
         sess = tf.get_default_session()
@@ -121,15 +121,19 @@ class A3C(object):
         rollout = self.pull_batch_from_queue()
         batch = process_rollout(rollout)
 
-        if c.DEBUG:
+        if c.GLOBAL_DEBUG:
             logger.info("GLOBAL BATCH RECEIVED")
         # Debug every n steps
-        should_compute_summary = self.global_steps % c.DEBUG_STEPS == 0
+        should_compute_summary = False
 
         worker = self.workers[batch['worker']]
 
-        if c.DEBUG:
-            logger.info("WHAT: %s", str(batch))
+        if c.GLOBAL_DEBUG:
+            logger.info("BATCH: %s", str(batch))
+            logger.info("WORKER INDEX: %d", batch['worker'])
+
+            for i in range(len(self.workers)):
+                logger.info("WORKER ORDER: %d: %d", i, self.workers[i].worker_index)
 
         # Update the global network from the local workers' gradients
         fetched = worker.policy.train_global(batch['si'], batch['a'],
@@ -137,13 +141,13 @@ class A3C(object):
                                              batch['features'][1], batch['adv'],
                                              batch['r'], should_compute_summary)
 
-        if c.DEBUG:
+        if c.GLOBAL_DEBUG:
             logger.info("GLOBAL UPDATE DONE")
 
         # Copy the changes back down to the local network
         sess.run(self.sync)
 
-        if c.DEBUG:
+        if c.GLOBAL_DEBUG:
             logger.info("GLOBAL SYNC FINISHED")
 
         # Global network has one more experience
