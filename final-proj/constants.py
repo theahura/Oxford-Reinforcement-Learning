@@ -53,4 +53,3 @@ WORKER_DEBUG = False
 RANDOM_POLICY = False
 CKPT_PATH = 'data/ckpt/'
 LOGDIR = 'data/logs/'
-DEBUG_STEPS = 2
