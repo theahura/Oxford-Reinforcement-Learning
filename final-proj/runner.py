@@ -3,19 +3,12 @@ Author: Amol Kapoor
 Description: Runner for slither.io AI.
 """
 
-import time
 import logging
-import os
 
-import gym
-import numpy as np
-import matplotlib.pyplot as plt
 import tensorflow as tf
 import universe  # register the universe environments
 
 import constants as c
-import envs
-import model
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -34,6 +27,7 @@ class PartialRollout(object):
         self.worker = worker_index
         self.terminal = False
         self.features = []
+        self.total_reward = 0
 
     def add(self, state, action, reward, value, terminal, features):
         self.states += [state]
@@ -102,6 +96,7 @@ def run_env(env, policy, worker_index):
                 print 'Total rewards: %d' % rewards
                 rewards = 0
                 last_c_in, last_h_in = policy.get_initial_features()
+                rollout.total_reward = rewards
                 break
             else:
                 rollout.r = policy.value(last_state, last_c_in, last_h_in)

@@ -131,6 +131,7 @@ class A3C(object):
         if c.GLOBAL_DEBUG:
             logger.info("BATCH: %s", str(batch))
             logger.info("WORKER INDEX: %d", batch['worker'])
+            logger.info("TOTAL REWARD: %d", rollout.total_reward)
 
             for i in range(len(self.workers)):
                 logger.info("WORKER ORDER: %d: %d", i, self.workers[i].worker_index)
