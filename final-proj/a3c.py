@@ -76,6 +76,8 @@ class A3C(object):
                 with tf.variable_scope('worker{}'.format(i)):
                     self.workers.append(Worker(sess, self.global_q, i))
 
+        self.summary_writer = tf.summary.FileWriter(c.LOGDIR)
+
     def start_workers(self):
         for worker in self.workers:
             worker.start_runner()
@@ -115,21 +117,14 @@ class A3C(object):
 
         worker = self.workers[batch['worker']]
 
-        # Get the gradients for the global network update from the local network
-        # using the latest experiences
-        fetched = worker.policy.get_gradients(batch['si'], batch['a'],
-                                              batch['features'][0],
-                                              batch['features'][1],
-                                              batch['adv'], batch['r'],
-                                              should_compute_summary)
-
-        gradients = fetched[0]
-
         if c.DEBUG:
-            logger.info("GLOBAL GRADS RECEIVED")
+            logger.info("WHAT: %s", str(batch))
 
-        # Actually update the global network
-        update = self.global_network.update_model(gradients)
+        # Update the global network from the local workers' gradients
+        fetched = worker.policy.train_global(batch['si'], batch['a'],
+                                             batch['features'][0],
+                                             batch['features'][1], batch['adv'],
+                                             batch['r'], should_compute_summary)
 
         if c.DEBUG:
             logger.info("GLOBAL UPDATE DONE")
@@ -152,8 +147,8 @@ class A3C(object):
                                            global_step=self.global_steps)
 
         # Logs
-        logger.info("Update step: %d, Update: %s", self.global_steps,
-                    str(update))
         if should_compute_summary:
-            logger.info("Summary: %s", str(fetched[0]))
-            logger.info("Gradients: %s", str(fetched[-1]))
+            self.summary_writer.add_summary(tf.Summary.FromString(fetched[0]),
+                                            fetched[-1])
+
+            self.summary_writer.flush()

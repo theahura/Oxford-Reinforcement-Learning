@@ -11,9 +11,9 @@ WINDOW_START = (30, 100)
 WINDOW_END = (500, 370)
 WINDOW_HEIGHT = WINDOW_END[1] - WINDOW_START[1]
 WINDOW_WIDTH = WINDOW_END[0] - WINDOW_START[0]
-#       Actions; center is about 235, 135; dont need to be specific
-MOUSE_ACTIONS = [(235, 85), (260, 110), (285, 135), (260, 160), (235, 185),
-                 (215, 160), (190, 135), (215, 110)]
+#       Actions; center is about 265, 235; dont need to be specific
+MOUSE_ACTIONS = [(265, 185), (290, 210), (315, 235), (290, 260), (265, 285),
+                 (245, 260), (220, 235), (245, 210)]
 CLICK_ACTIONS = [0, 1]
 ACTIONS = list(itertools.product(MOUSE_ACTIONS, CLICK_ACTIONS))
 NUM_ACTIONS = len(ACTIONS) # x coord, y coord, lmb click or not
@@ -42,11 +42,12 @@ OUTPUT_KEEP_PROB = .5
 MAX_GRAD_NORM = 40.0
 
 # Misc
-STEPS_TO_SAVE = 30
+STEPS_TO_SAVE = 5 # saves every five lives
 NUM_WORKERS = 2
 
 # Debugging
 DEBUG = True
 RANDOM_POLICY = False
 CKPT_PATH = 'data/ckpt/'
+LOGDIR = 'data/logs/'
 DEBUG_STEPS = 10

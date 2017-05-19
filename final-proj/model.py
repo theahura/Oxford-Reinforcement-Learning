@@ -170,7 +170,13 @@ class Policy(object):
             grads = tf.gradients(self.loss, self.var_list)
             grads, _ = tf.clip_by_global_norm(grads, c.MAX_GRAD_NORM)
 
-            self.get_grads = grads
+            # Train global network
+            global_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                            'global')
+            grads_and_vars = list(zip(grads, global_vars))
+            self.adam_opt = tf.train.AdamOptimizer(
+                learning_rate=c.LEARNING_RATE)
+            self.train = self.adam_opt.apply_gradients(grads_and_vars)
 
             # Summary ops
             bs = tf.to_float(tf.shape(self.x)[0])
@@ -221,16 +227,16 @@ class Policy(object):
         return sess.run(self.vf, {self.x: [ob], self.c_in: c_in,
                                   self.h_in: h_in})[0]
 
-    def get_gradients(self, ob, ac, c_in, h_in, adv, reward, summary=False):
+    def train_global(self, ob, ac, c_in, h_in, adv, reward, summary=False):
         """
         Calculates gradients from the reward based on A3C.
         Meant to be called from local networks.
         """
         sess = tf.get_default_session()
-        outputs = [self.get_grads]
+        outputs = [self.train]
 
         if summary:
-            outputs = outputs + [self.summary_op]
+            outputs = [self.summary_op] + outputs
 
         inputs = {
             self.x: ob,
@@ -241,13 +247,3 @@ class Policy(object):
             self.adv: adv
         }
         return sess.run(outputs, inputs)
-
-    def update_model(self, gradients):
-        """
-        Updates the model. Meant to be called from the global network.
-        """
-        sess = tf.get_default_session()
-        grads_and_vars = list(zip(gradients, self.var_list))
-        opt = tf.train.AdamOptimizer(c.LEARNING_RATE)
-        train = opt.apply_gradients(grads_and_vars)
-        return sess.run(train, {})

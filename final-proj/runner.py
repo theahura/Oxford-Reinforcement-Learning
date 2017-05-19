@@ -102,7 +102,6 @@ def run_env(env, policy, worker_index):
                 print 'Total rewards: %d' % rewards
                 rewards = 0
                 last_c_in, last_h_in = policy.get_initial_features()
-                last_state = env.reset()
                 break
             else:
                 rollout.r = policy.value(last_state, last_c_in, last_h_in)

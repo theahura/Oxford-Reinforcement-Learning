@@ -22,7 +22,7 @@ class Worker(threading.Thread):
     def __init__(self, sess, global_q, worker_index):
 
         if c.DEBUG:
-            logger.info('Worker %d started.', worker_index)
+            logger.info('WORKER %d STARTED.', worker_index)
         threading.Thread.__init__(self)
         self.daemon = True
         self.worker_index = worker_index
