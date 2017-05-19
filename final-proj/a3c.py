@@ -9,7 +9,7 @@ import os
 import Queue
 
 import numpy as np
-import scipy
+import scipy.signal
 import tensorflow as tf
 
 import constants as c
