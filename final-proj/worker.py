@@ -4,6 +4,7 @@ Description: Where the environment is run and experiences are generated.
 """
 
 import threading
+import time
 import logging
 
 import constants as c
@@ -27,10 +28,10 @@ class Worker(threading.Thread):
         self.daemon = True
         self.worker_index = worker_index
         self.q = global_q
-        self.env = envs.create_env()
         self.sess = sess
         self.policy = model.get_model(sess, 'local')
         self.local_steps = 0
+        self.is_running = True
 
     def start_runner(self):
         """
@@ -43,14 +44,28 @@ class Worker(threading.Thread):
         Overrides previous run method to init tf.
         """
         with self.sess.as_default():
-            self._run()
+            try:
+                self._run()
+            except:
+                logger.info("WORKER %d DIED", self.worker_index)
+                self.is_running = False
         return
+
+    def restart(self):
+        """
+        If an environment crashes, want to restart it
+        """
+        logger.info("RESTARTING WORKER %d", self.worker_index)
+        self.is_running = True
+        time.sleep(c.SLEEP_TIME)
+        self.run()
 
     def _run(self):
         """
         Main worker loop. Loads experiences into the global q.
         """
-        rollout_provider = runner.run_env(self.env, self.policy,
+        env = envs.create_env()
+        rollout_provider = runner.run_env(env, self.policy,
                                           self.worker_index)
         while True:
             self.local_steps += 1

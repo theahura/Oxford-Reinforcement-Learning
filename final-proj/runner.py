@@ -52,9 +52,9 @@ def run_env(env, policy, worker_index):
     last_state = env.reset()
     last_c_in, last_h_in = policy.get_initial_features()
     rewards = 0
+    steps = 0
 
     while True:
-        terminal_end = False
         rollout = PartialRollout(worker_index)
 
         while True:
@@ -93,9 +93,11 @@ def run_env(env, policy, worker_index):
 
             # Check if we hit game over
             if terminal:
-                print 'Total rewards: %d' % rewards
+                rollout.total_reward = rewards
                 rewards = 0
                 last_c_in, last_h_in = policy.get_initial_features()
+                break
+            elif steps % c.ENV_STEPS == 0:
                 rollout.total_reward = rewards
                 break
             else:

@@ -97,6 +97,8 @@ class A3C(object):
         """
         Gets all of the experiences available on call
         """
+        if c.GLOBAL_DEBUG:
+            logger.info("GLOBAL Q LEN: %d", self.global_q.qsize())
         rollout = self.global_q.get(timeout=600.0)
         while not rollout.terminal:
             try:
@@ -122,20 +124,24 @@ class A3C(object):
         batch = process_rollout(rollout)
 
         if c.GLOBAL_DEBUG:
-            logger.info("GLOBAL BATCH RECEIVED")
+            logger.info("GLOBAL BATCH RECEIVED: %d", self.global_steps)
+
         # Debug every n steps
         should_compute_summary = False
-
-        worker = self.workers[batch['worker']]
 
         if c.GLOBAL_DEBUG:
             logger.info("BATCH: %s", str(batch))
             logger.info("WORKER INDEX: %d", batch['worker'])
             logger.info("TOTAL REWARD: %d", rollout.total_reward)
 
-            for i in range(len(self.workers)):
-                logger.info("WORKER ORDER: %d: %d", i, self.workers[i].worker_index)
+        for w in self.workers:
+            if c.GLOBAL_DEBUG:
+                logger.info("WORKER %d RUNNING: %s", w.worker_index,
+                            w.is_running)
+            if not w.is_running:
+                w.restart()
 
+        worker = self.workers[batch['worker']]
         # Update the global network from the local workers' gradients
         fetched = worker.policy.train_global(batch['si'], batch['a'],
                                              batch['features'][0],
