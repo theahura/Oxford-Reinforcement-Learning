@@ -33,7 +33,7 @@ LSTM_UNITS = 256
 #       A3C Params
 VF_LOSS_CONST = 0.5
 ENT_CONST = 0.01
-LEARNING_RATE = 1e-4
+LEARNING_RATE = 0.001
 GAMMA = 0.99
 LAMBDA = 1.0
 #       Optimizations and Convergence Tricks
@@ -46,7 +46,7 @@ REW_SCALE = 10
 # Misc
 STEPS_TO_SAVE = 5 # saves every n lives
 ENV_STEPS = 100 # Number of steps in runner before updating global
-NUM_WORKERS = 5 # Number of threads to use, number of workers is actually n - 1
+NUM_WORKERS = 2 # Number of threads to use, number of workers is actually n - 1
 SLEEP_TIME = 300 # Wait 5 minutes before restarts
 
 # Debugging
@@ -57,3 +57,4 @@ WORKER_DEBUG = False
 RANDOM_POLICY = False
 CKPT_PATH = 'data/ckpt/'
 LOGDIR = 'data/logs/'
+SUM_STEPS = 5

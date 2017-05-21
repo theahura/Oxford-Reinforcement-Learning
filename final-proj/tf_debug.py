@@ -19,7 +19,6 @@ with tf.Session() as sess:
 
         saver = tf.train.import_meta_graph(CKPT_PATH)
         saver.restore(sess, tf.train.latest_checkpoint('./data/ckpt/'))
-        sess.run(tf.global_variables_initializer())
 
         print sess.run(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,
                                      scope='global'))

@@ -26,13 +26,15 @@ def get_model(session, scope):
 
     ckpt = tf.train.get_checkpoint_state(c.CKPT_PATH)
 
-    if scope == 'global' and ckpt and tf.train.checkpoint_exists(
-            ckpt.model_checkpoint_path):
-        logger.info("GOT OLD MODEL FOR SCOPE %s", scope)
-        policy.saver.restore(session, ckpt.model_checkpoint_path)
+    if scope == 'global':
+        if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
+            logger.info("GOT OLD MODEL FOR SCOPE %s", scope)
+            policy.saver.restore(session, ckpt.model_checkpoint_path)
+        else:
+            logger.info("STARTING NEW MODEL FOR SCOPE %s", scope)
+            session.run(tf.global_variables_initializer())
     else:
         logger.info("STARTING NEW MODEL FOR SCOPE %s", scope)
-        session.run(tf.global_variables_initializer())
     return policy
 
 def normalized_columns_initializer(std=1.0):
@@ -183,12 +185,14 @@ class Policy(object):
             global_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                             'global')
             grads_and_vars = list(zip(grads, global_vars))
-            self.adam_opt = tf.train.AdamOptimizer(
+            self.adam_opt = tf.train.GradientDescentOptimizer(
                 learning_rate=c.LEARNING_RATE)
             self.train = self.adam_opt.apply_gradients(grads_and_vars)
 
             # Summary ops
+            self.total_rew = tf.placeholder(tf.float32, name='totrew')
             bs = tf.to_float(tf.shape(self.x)[0])
+            total_rew = tf.summary.scalar("model/total_reward", self.total_rew)
             pi_sum = tf.summary.scalar("model/policy_loss", pi_loss / bs)
             vf_sum = tf.summary.scalar("model/value_loss", vf_loss / bs)
             ent_sum = tf.summary.scalar("model/entropy", entropy / bs)
@@ -238,7 +242,8 @@ class Policy(object):
         return sess.run(self.vf, {self.x: [ob], self.c_in: c_in,
                                   self.h_in: h_in})[0]
 
-    def train_global(self, ob, ac, c_in, h_in, adv, reward, summary=False):
+    def train_global(self, ob, ac, c_in, h_in, adv, reward, summary=False,
+                     total_reward=0):
         """
         Calculates gradients from the reward based on A3C.
         Meant to be called from local networks.
@@ -255,7 +260,8 @@ class Policy(object):
             self.c_in: c_in,
             self.h_in: h_in,
             self.r: reward,
-            self.adv: adv
+            self.adv: adv,
+            self.total_rew: total_reward
         }
 
         if c.MODEL_DEBUG:

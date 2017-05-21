@@ -127,7 +127,7 @@ class A3C(object):
             logger.info("GLOBAL BATCH RECEIVED: %d", self.global_steps)
 
         # Debug every n steps
-        should_compute_summary = True
+        should_compute_summary = self.global_steps % c.SUM_STEPS == 0
 
         if c.GLOBAL_DEBUG:
             logger.info("BATCH: %s", str(batch))
@@ -144,7 +144,8 @@ class A3C(object):
         fetched = worker.policy.train_global(batch['si'], batch['a'],
                                              batch['features'][0],
                                              batch['features'][1], batch['adv'],
-                                             batch['r'], should_compute_summary)
+                                             batch['r'], should_compute_summary,
+                                             rollout.total_reward)
 
         if c.GLOBAL_DEBUG:
             logger.info("GLOBAL UPDATE DONE")
@@ -166,6 +167,7 @@ class A3C(object):
         # Logs
         if should_compute_summary:
             logger.info("GETTING THE SUMMARY")
-            self.summary_writer.add_summary(tf.Summary.FromString(fetched[1]))
+            self.summary_writer.add_summary(tf.Summary.FromString(fetched[1]),
+                                            self.global_steps)
 
             self.summary_writer.flush()
