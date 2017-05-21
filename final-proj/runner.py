@@ -76,6 +76,8 @@ def run_env(env, policy, worker_index):
             # Run the action
             state, reward, terminal, info = env.step(translated_action)
 
+            # Scale the reward but save the actual value
+            rewards += reward
             if reward == 0:
                 reward = reward*c.REW_SCALE
             else:
@@ -88,7 +90,6 @@ def run_env(env, policy, worker_index):
             # Process the action results
             rollout.add(last_state, action, reward, value, terminal,
                         (last_c_in, last_h_in))
-            rewards += reward
 
             if c.WORKER_DEBUG:
                 logger.info("WORKER %d TOTAL REW: %s", worker_index,

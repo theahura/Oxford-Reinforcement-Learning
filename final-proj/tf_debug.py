@@ -6,7 +6,8 @@ import tensorflow as tf
 from model import Policy
 import constants as c
 
-CKPT_PATH = './data/ckpt/slither.ckpt-6180.meta'
+ckpt_num = raw_input("ckpt num: ")
+CKPT_PATH = './data/ckpt/slither.ckpt-%d.meta' % int(ckpt_num)
 
 init = tf.global_variables_initializer()
 with tf.Session() as sess:
@@ -20,5 +21,9 @@ with tf.Session() as sess:
         saver = tf.train.import_meta_graph(CKPT_PATH)
         saver.restore(sess, tf.train.latest_checkpoint('./data/ckpt/'))
 
-        print sess.run(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,
-                                     scope='global'))
+        tvars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,
+                                  scope='global')
+        tvars_vals = sess.run(tvars)
+
+        for var, val in zip(tvars, tvars_vals):
+            print(var, val)
