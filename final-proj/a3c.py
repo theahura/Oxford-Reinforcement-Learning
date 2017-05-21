@@ -127,7 +127,7 @@ class A3C(object):
             logger.info("GLOBAL BATCH RECEIVED: %d", self.global_steps)
 
         # Debug every n steps
-        should_compute_summary = False
+        should_compute_summary = True
 
         if c.GLOBAL_DEBUG:
             logger.info("BATCH: %s", str(batch))
@@ -165,7 +165,7 @@ class A3C(object):
 
         # Logs
         if should_compute_summary:
-            self.summary_writer.add_summary(tf.Summary.FromString(fetched[0]),
-                                            fetched[-1])
+            logger.info("GETTING THE SUMMARY")
+            self.summary_writer.add_summary(tf.Summary.FromString(fetched[0]))
 
             self.summary_writer.flush()

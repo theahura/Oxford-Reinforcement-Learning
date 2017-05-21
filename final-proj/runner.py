@@ -58,6 +58,9 @@ def run_env(env, policy, worker_index):
         rollout = PartialRollout(worker_index)
 
         while True:
+
+            steps += 1
+
             # Get the action
             output = policy.get_action(last_state, last_c_in, last_h_in)
             action, value, features = output[0], output[1], output[2:]

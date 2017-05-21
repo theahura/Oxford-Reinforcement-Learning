@@ -1,8 +1,9 @@
 *pyc
 *png
 *swp
-log
-logs
+log*
+logs*
+events*
 *ckpt
 *ckpt.meta
 *checkpoint*

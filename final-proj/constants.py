@@ -42,7 +42,7 @@ OUTPUT_KEEP_PROB = .5
 MAX_GRAD_NORM = 40.0
 
 # Misc
-STEPS_TO_SAVE = 2 # saves every two lives
+STEPS_TO_SAVE = 1 # saves every n lives
 ENV_STEPS = 100
 NUM_WORKERS = 2
 SLEEP_TIME = 300 # Wait 5 minutes before restarts
