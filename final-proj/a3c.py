@@ -127,10 +127,11 @@ class A3C(object):
         batch = process_rollout(rollout)
 
         if c.GLOBAL_DEBUG:
-            logger.info("GLOBAL BATCH RECEIVED: %d", self.global_steps)
+            logger.info("GLOBAL BATCH RECEIVED: %d",
+                        sess.run(self.global_steps))
 
         # Debug every n steps
-        should_compute_summary = self.global_steps % c.SUM_STEPS == 0
+        should_compute_summary = sess.run(self.global_steps) % c.SUM_STEPS == 0
 
         if c.GLOBAL_DEBUG:
             logger.info("BATCH: %s", str(batch))

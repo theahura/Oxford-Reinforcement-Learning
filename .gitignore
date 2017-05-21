@@ -9,4 +9,5 @@ events*
 *checkpoint*
 backups/
 *.data
+data
 *.csv
