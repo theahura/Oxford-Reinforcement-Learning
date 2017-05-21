@@ -166,6 +166,6 @@ class A3C(object):
         # Logs
         if should_compute_summary:
             logger.info("GETTING THE SUMMARY")
-            self.summary_writer.add_summary(tf.Summary.FromString(fetched[0]))
+            self.summary_writer.add_summary(tf.Summary.FromString(fetched[1]))
 
             self.summary_writer.flush()

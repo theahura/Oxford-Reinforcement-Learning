@@ -76,6 +76,11 @@ def run_env(env, policy, worker_index):
             # Run the action
             state, reward, terminal, info = env.step(translated_action)
 
+            if reward == 0:
+                reward = reward*c.REW_SCALE
+            else:
+                reward = c.ZERO_REW_VAL
+
             if c.WORKER_DEBUG:
                 logger.info("WORKER %d REW: %s", worker_index, str(reward))
                 logger.info("WORKER %d TERM: %s", worker_index, str(terminal))

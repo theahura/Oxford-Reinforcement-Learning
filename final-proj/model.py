@@ -189,14 +189,16 @@ class Policy(object):
 
             # Summary ops
             bs = tf.to_float(tf.shape(self.x)[0])
-            tf.summary.scalar("model/policy_loss", pi_loss / bs)
-            tf.summary.scalar("model/value_loss", vf_loss / bs)
-            tf.summary.scalar("model/entropy", entropy / bs)
-            tf.summary.image("model/state", self.x)
-            tf.summary.scalar("model/grad_global_norm", tf.global_norm(grads))
-            tf.summary.scalar("model/var_global_norm",
-                              tf.global_norm(self.var_list))
-            self.summary_op = tf.summary.merge_all()
+            pi_sum = tf.summary.scalar("model/policy_loss", pi_loss / bs)
+            vf_sum = tf.summary.scalar("model/value_loss", vf_loss / bs)
+            ent_sum = tf.summary.scalar("model/entropy", entropy / bs)
+            si_sum = tf.summary.image("model/state", self.x)
+            glob_sum = tf.summary.scalar("model/grad_global_norm",
+                                         tf.global_norm(grads))
+            var_glob_sum = tf.summary.scalar("model/var_global_norm",
+                                             tf.global_norm(self.var_list))
+            self.summary_op = tf.summary.merge([pi_sum, vf_sum, ent_sum, si_sum,
+                                                glob_sum, var_glob_sum])
         else:
             # Saving op
             vars_to_save = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
@@ -245,7 +247,7 @@ class Policy(object):
         outputs = [self.train]
 
         if summary:
-            outputs = [self.summary_op] + outputs
+            outputs = outputs + [self.summary_op]
 
         inputs = {
             self.x: ob,

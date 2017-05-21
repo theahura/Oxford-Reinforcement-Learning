@@ -6,7 +6,7 @@ import tensorflow as tf
 from model import Policy
 import constants as c
 
-CKPT_PATH = './data/ckpt/slither.ckpt-78.meta'
+CKPT_PATH = './data/ckpt/slither.ckpt-6180.meta'
 
 init = tf.global_variables_initializer()
 with tf.Session() as sess:

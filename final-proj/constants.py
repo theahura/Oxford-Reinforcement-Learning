@@ -14,7 +14,7 @@ WINDOW_WIDTH = WINDOW_END[0] - WINDOW_START[0]
 #       Actions; center is about 265, 235; dont need to be specific
 MOUSE_ACTIONS = [(265, 185), (290, 210), (315, 235), (290, 260), (265, 285),
                  (245, 260), (220, 235), (245, 210)]
-CLICK_ACTIONS = [0, 1]
+CLICK_ACTIONS = [0, 0]
 ACTIONS = list(itertools.product(MOUSE_ACTIONS, CLICK_ACTIONS))
 NUM_ACTIONS = len(ACTIONS) # x coord, y coord, lmb click or not
 #       Optimizations
@@ -40,11 +40,13 @@ LAMBDA = 1.0
 INPUT_KEEP_PROB = .5
 OUTPUT_KEEP_PROB = .5
 MAX_GRAD_NORM = 40.0
+ZERO_REW_VAL = -10
+REW_SCALE = 10
 
 # Misc
-STEPS_TO_SAVE = 1 # saves every n lives
-ENV_STEPS = 100
-NUM_WORKERS = 2
+STEPS_TO_SAVE = 5 # saves every n lives
+ENV_STEPS = 100 # Number of steps in runner before updating global
+NUM_WORKERS = 5 # Number of threads to use, number of workers is actually n - 1
 SLEEP_TIME = 300 # Wait 5 minutes before restarts
 
 # Debugging
