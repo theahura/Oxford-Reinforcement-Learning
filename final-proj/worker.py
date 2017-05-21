@@ -43,19 +43,21 @@ class Worker(threading.Thread):
         """
         Overrides previous run method to init tf.
         """
-        with self.sess.as_default():
-            try:
-                self._run()
-            except:
-                logger.info("WORKER %d DIED", self.worker_index)
-                self.is_running = False
-        return
+        while True:
+            with self.sess.as_default():
+                try:
+                    self._run()
+                except:
+                    logger.info("WORKER %d DIED", self.worker_index)
+                    self.is_running = False
+                    time.sleep(c.SLEEP_TIME)
+                    self.is_running = True
+                    logger.info("RESTARTING WORKER %d", self.worker_index)
 
     def restart(self):
         """
         If an environment crashes, want to restart it
         """
-        logger.info("RESTARTING WORKER %d", self.worker_index)
         self.is_running = True
         time.sleep(c.SLEEP_TIME)
         self.run()

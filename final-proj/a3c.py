@@ -138,8 +138,6 @@ class A3C(object):
             if c.GLOBAL_DEBUG:
                 logger.info("WORKER %d RUNNING: %s", w.worker_index,
                             w.is_running)
-            if not w.is_running:
-                w.restart()
 
         worker = self.workers[batch['worker']]
         # Update the global network from the local workers' gradients

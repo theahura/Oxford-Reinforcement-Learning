@@ -44,7 +44,7 @@ MAX_GRAD_NORM = 40.0
 # Misc
 STEPS_TO_SAVE = 2 # saves every two lives
 ENV_STEPS = 100
-NUM_WORKERS = 5
+NUM_WORKERS = 2
 SLEEP_TIME = 300 # Wait 5 minutes before restarts
 
 # Debugging
