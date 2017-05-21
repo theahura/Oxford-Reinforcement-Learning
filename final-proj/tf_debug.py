@@ -26,4 +26,4 @@ with tf.Session() as sess:
         tvars_vals = sess.run(tvars)
 
         for var, val in zip(tvars, tvars_vals):
-            print(var, val)
+            print(var.name, val)

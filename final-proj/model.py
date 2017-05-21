@@ -200,14 +200,13 @@ class Policy(object):
             glob_sum = tf.summary.scalar("model/grad_global_norm",
                                          tf.global_norm(grads))
             var_glob_sum = tf.summary.scalar("model/var_global_norm",
-                                             tf.global_norm(self.var_list))
+                                             tf.global_norm(global_vars))
             self.summary_op = tf.summary.merge([pi_sum, vf_sum, ent_sum, si_sum,
                                                 glob_sum, var_glob_sum,
                                                 total_rew])
         else:
             # Saving op
-            vars_to_save = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                             'global')
+            vars_to_save = tf.get_collection(tf.GraphKeys.VARIABLES, 'global')
             self.saver = tf.train.Saver(vars_to_save)
 
     def get_initial_features(self):

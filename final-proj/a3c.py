@@ -60,12 +60,15 @@ class A3C(object):
         """
         Set up global network sync graph.
         """
-        self.global_steps = 0
         self.global_q = Queue.Queue()
         sess = tf.get_default_session()
         with tf.device('/cpu:0'):
             with tf.variable_scope('global'):
                 self.global_network = model.get_model(sess, 'global')
+                self.global_steps = tf.Variable(0, name='global_step',
+                                                trainable=False)
+                self.glob_inc = tf.assign(self.global_steps,
+                                          self.global_steps+1)
 
             num_workers = multiprocessing.cpu_count() - 1
             if c.NUM_WORKERS:
@@ -157,7 +160,7 @@ class A3C(object):
             logger.info("GLOBAL SYNC FINISHED")
 
         # Global network has one more experience
-        self.global_steps += 1
+        sess.run(self.glob_inc)
 
         if self.global_steps % c.STEPS_TO_SAVE == 0:
             checkpoint_path = os.path.join(c.CKPT_PATH, 'slither.ckpt')
@@ -168,6 +171,6 @@ class A3C(object):
         if should_compute_summary:
             logger.info("GETTING THE SUMMARY")
             self.summary_writer.add_summary(tf.Summary.FromString(fetched[1]),
-                                            self.global_steps)
+                                            sess.run(self.global_steps))
 
             self.summary_writer.flush()
