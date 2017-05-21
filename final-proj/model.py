@@ -202,7 +202,8 @@ class Policy(object):
             var_glob_sum = tf.summary.scalar("model/var_global_norm",
                                              tf.global_norm(self.var_list))
             self.summary_op = tf.summary.merge([pi_sum, vf_sum, ent_sum, si_sum,
-                                                glob_sum, var_glob_sum])
+                                                glob_sum, var_glob_sum,
+                                                total_rew])
         else:
             # Saving op
             vars_to_save = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,

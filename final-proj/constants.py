@@ -46,7 +46,7 @@ REW_SCALE = 10
 # Misc
 STEPS_TO_SAVE = 5 # saves every n lives
 ENV_STEPS = 100 # Number of steps in runner before updating global
-NUM_WORKERS = 2 # Number of threads to use, number of workers is actually n - 1
+NUM_WORKERS = 6 # Number of threads to use, number of workers is actually n - 1
 SLEEP_TIME = 300 # Wait 5 minutes before restarts
 
 # Debugging
