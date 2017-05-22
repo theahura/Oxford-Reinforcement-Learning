@@ -163,7 +163,8 @@ class A3C(object):
         # Global network has one more experience
         sess.run(self.glob_inc)
 
-        if self.global_steps % c.STEPS_TO_SAVE == 0:
+        if sess.run(self.global_steps) % c.STEPS_TO_SAVE == 0:
+            logger.info("SAVING")
             checkpoint_path = os.path.join(c.CKPT_PATH, 'slither.ckpt')
             self.global_network.saver.save(sess, checkpoint_path,
                                            global_step=self.global_steps)
