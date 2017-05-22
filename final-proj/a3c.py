@@ -64,7 +64,7 @@ class A3C(object):
         sess = tf.get_default_session()
         with tf.device('/cpu:0'):
             with tf.variable_scope('global'):
-                self.global_steps = tf.Variable(4077, name='global_step',
+                self.global_steps = tf.Variable(0, name='global_step',
                                                 trainable=False)
                 self.global_network = model.get_model(sess, 'global')
                 self.glob_inc = tf.assign(self.global_steps,
