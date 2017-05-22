@@ -27,3 +27,5 @@ with tf.Session() as sess:
 
         for var, val in zip(tvars, tvars_vals):
             print(var.name, val)
+
+        print sess.run(tf.global_norm(tvars))

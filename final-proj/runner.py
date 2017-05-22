@@ -64,21 +64,21 @@ def run_env(env, policy, worker_index):
             # Get the action
             output = policy.get_action(last_state, last_c_in, last_h_in)
             action, value, features = output[0], output[1], output[2:]
-            translated_action = c.ACTIONS[action.argmax()]
-            x_y = translated_action[0]
-            x, y = x_y
-            click = translated_action[1]
-            translated_action = [universe.spaces.PointerEvent(x, y, click)]
+
+            final_action = action.argmax()
 
             if c.WORKER_DEBUG:
                 logger.info("WORKER %d TRANSLATED ACTION: %s", worker_index,
-                            str(translated_action))
+                            str(final_action))
             # Run the action
-            state, reward, terminal, info = env.step(translated_action)
+            state, reward, terminal, info = env.step(final_action)
 
             # Scale the reward but save the actual value
             rewards += reward
-            if reward == 0:
+
+            if terminal:
+                reward = c.END_GAME_REW
+            elif reward == 0:
                 reward = reward*c.REW_SCALE
             else:
                 reward = c.ZERO_REW_VAL

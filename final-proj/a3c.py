@@ -64,9 +64,9 @@ class A3C(object):
         sess = tf.get_default_session()
         with tf.device('/cpu:0'):
             with tf.variable_scope('global'):
-                self.global_network = model.get_model(sess, 'global')
-                self.global_steps = tf.Variable(0, name='global_step',
+                self.global_steps = tf.Variable(4077, name='global_step',
                                                 trainable=False)
+                self.global_network = model.get_model(sess, 'global')
                 self.glob_inc = tf.assign(self.global_steps,
                                           self.global_steps+1)
 
@@ -168,6 +168,9 @@ class A3C(object):
             checkpoint_path = os.path.join(c.CKPT_PATH, 'slither.ckpt')
             self.global_network.saver.save(sess, checkpoint_path,
                                            global_step=self.global_steps)
+
+        if sess.run(self.global_steps) % c.LEARNING_RATE_STEP == 0:
+            c.LEARNING_RATE = c.LEARNING_RATE * c.LEARNING_RATE_SCALE
 
         # Logs
         if should_compute_summary:
