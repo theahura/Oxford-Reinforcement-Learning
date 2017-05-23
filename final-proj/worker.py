@@ -29,7 +29,7 @@ class Worker(threading.Thread):
         self.worker_index = worker_index
         self.q = global_q
         self.sess = sess
-        self.policy = model.get_model(sess, 'local')
+        self.policy = model.get_model(sess, 'local', worker_index)
         self.local_steps = 0
         self.is_running = True
 

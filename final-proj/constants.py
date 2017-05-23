@@ -13,10 +13,10 @@ WINDOW_WIDTH = WINDOW_END[0] - WINDOW_START[0]
 #       Actions
 ACTIONS = ['left', 'right', 'up', 'left up', 'right up']
 NUM_ACTIONS = len(ACTIONS)
-#       Game scorel
+#       Reward function
 ZERO_REW_VAL = -1 # Punish not growing
 REW_SCALE = 1
-END_GAME_REW = -10 # Punish game overs
+END_GAME_REW = 0 # Punish game overs
 #       Optimizations
 FPS = 10.0
 RESIZE_X = 128
@@ -41,11 +41,12 @@ LAMBDA = 1.0
 #       Optimizations and Convergence Tricks
 INPUT_KEEP_PROB = 0.5
 OUTPUT_KEEP_PROB = 0.5
-MAX_GRAD_NORM = 80.0
+MAX_GRAD_NORM = 60.0
+REG_CONST = 0.0000001
 
 # Misc
 STEPS_TO_SAVE = 5 # saves every n lives or updates (i.e. env_steps*n steps)
-ENV_STEPS = 100 # Number of steps in runner before updating global
+ENV_STEPS = 100.0*FPS # Number of steps in runner before updating global
 NUM_WORKERS = 6 # Number of threads to use, number of workers is actually n - 1
 SLEEP_TIME = 300 # Wait 5 minutes before restarts
 

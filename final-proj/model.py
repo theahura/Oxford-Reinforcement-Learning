@@ -18,11 +18,11 @@ import constants as c
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-def get_model(session, scope):
+def get_model(session, scope, index=None):
     """
     Loads the tf model or inits a new one.
     """
-    policy = Policy(c.OBSERVATION_SPACE, c.NUM_ACTIONS, scope)
+    policy = Policy(c.OBSERVATION_SPACE, c.NUM_ACTIONS, scope, index)
 
     ckpt = tf.train.get_checkpoint_state(c.CKPT_PATH)
 
@@ -103,7 +103,7 @@ class Policy(object):
     NN that describes the policy for the agent.
     """
 
-    def __init__(self, input_shape, action_size, scope):
+    def __init__(self, input_shape, action_size, scope, worker_index):
         """
         Sets up the model.
             Input - one frame, shape (batch=1, height, width, channel=1)
@@ -177,7 +177,15 @@ class Policy(object):
                 self.vf - self.r))
             entropy = - tf.reduce_sum(prob * log_prob)
 
-            self.loss = pi_loss + c.VF_LOSS_CONST * vf_loss - entropy * c.ENT_CONST
+            # Regularization
+            local_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                           'worker{}'.format(worker_index))
+            regularizer = c.REG_CONST * sum(
+                tf.nn.l2_loss(x) for x in local_vars)
+
+            self.loss = pi_loss + c.VF_LOSS_CONST * vf_loss - (
+                entropy * c.ENT_CONST) + c.REG_CONST * regularizer
+
             grads = tf.gradients(self.loss, self.var_list)
             grads, _ = tf.clip_by_global_norm(grads, c.MAX_GRAD_NORM)
 
