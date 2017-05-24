@@ -13,7 +13,7 @@ init = tf.global_variables_initializer()
 with tf.Session() as sess:
     with tf.variable_scope('global'):
         print 'getting policy'
-        policy = Policy(c.OBSERVATION_SPACE, c.NUM_ACTIONS, 'global')
+        policy = Policy(c.OBSERVATION_SPACE, c.NUM_ACTIONS, 'global', 1)
 
         print 'getting ckpt'
         print CKPT_PATH
@@ -21,7 +21,7 @@ with tf.Session() as sess:
         saver = tf.train.import_meta_graph(CKPT_PATH)
         saver.restore(sess, tf.train.latest_checkpoint('./data/ckpt/'))
 
-        tvars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,
+        tvars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                   scope='global')
         tvars_vals = sess.run(tvars)
 

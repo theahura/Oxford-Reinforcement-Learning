@@ -14,7 +14,7 @@ WINDOW_WIDTH = WINDOW_END[0] - WINDOW_START[0]
 ACTIONS = [(0, 0, 1), (0, 1, 0), (1, 0, 0), (1, 0, 1), (0, 1, 1)]
 NUM_ACTIONS = len(ACTIONS)
 #       Reward function
-ZERO_REW_VAL = -2 # Punish not growing
+ZERO_REW_VAL = 0 # Punish not growing
 REW_SCALE = 1
 END_GAME_REW = 0 # Punish game overs
 #       Optimizations
@@ -32,29 +32,30 @@ OUTPUT_CHANNELS = 32
 LSTM_UNITS = 512
 #       A3C Params
 VF_LOSS_CONST = 0.5
-ENT_CONST = 0.01
+ENT_CONST = 0.01 # Encourage exploration with more entropy
 LEARNING_RATE = 0.1
 LEARNING_RATE_STEP = 25
 LEARNING_RATE_SCALE = 0.99
-GAMMA = 0.99
+GAMMA = 0.99 # Discount past rewards by this much
 LAMBDA = 1.0
 #       Optimizations and Convergence Tricks
-INPUT_KEEP_PROB = 0.5
+INPUT_KEEP_PROB = 0.5 # Dropout for lstm
 OUTPUT_KEEP_PROB = 0.5
+CONV_KEEP_PROB = 0.5 # Dropout for convnet
 MAX_GRAD_NORM = 60.0
-REG_CONST = 0.000001
+REG_CONST = 0.00001 # L2 norm regularization
 
 # Misc
 STEPS_TO_SAVE = 5 # saves every n lives or updates (i.e. env_steps*n steps)
 ENV_STEPS = 100.0*FPS # Number of steps in runner before updating global
-NUM_WORKERS = 1 # Number of threads to use, number of workers is actually n - 1
+NUM_WORKERS = 6 # Number of threads to use. Set to 1 to play instead of train
 SLEEP_TIME = 300 # Wait 5 minutes before restarts
 
 # Debugging
 DEBUG = True
 GLOBAL_DEBUG = True
 MODEL_DEBUG = False
-WORKER_DEBUG = True
+WORKER_DEBUG = False
 RANDOM_POLICY = False
 CKPT_PATH = 'data/ckpt/'
 LOGDIR = 'data/logs/'

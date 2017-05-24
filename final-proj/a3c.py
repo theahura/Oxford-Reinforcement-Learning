@@ -23,7 +23,7 @@ logger.setLevel(logging.INFO)
 
 def discount(x, gamma):
     """
-    Discounts x. Part of adv calculation. See starter agent.
+    Discounts rewards.
     """
     return scipy.signal.lfilter([1], [1, -gamma], x[::-1], axis=0)[::-1]
 

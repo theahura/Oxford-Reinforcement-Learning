@@ -119,6 +119,7 @@ class Policy(object):
         for i in xrange(c.CONV_LAYERS):
             x = tf.nn.elu(conv2d(x, c.OUTPUT_CHANNELS, 'l{}'.format(i + 1),
                                  c.FILTER_SHAPE, c.STRIDE))
+            x = tf.nn.dropout(x, c.CONV_KEEP_PROB)
 
         # Add a time dimension
         x = tf.expand_dims(flatten(x), [0])
@@ -180,6 +181,7 @@ class Policy(object):
             # Regularization
             local_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                            'worker{}'.format(worker_index))
+
             regularizer = c.REG_CONST * sum(
                 tf.nn.l2_loss(x) for x in local_vars)
 
@@ -187,7 +189,7 @@ class Policy(object):
                 entropy * c.ENT_CONST) + regularizer
 
             grads = tf.gradients(self.loss, self.var_list)
-            grads, _ = tf.clip_by_global_norm(grads, c.MAX_GRAD_NORM)
+            grads, norm = tf.clip_by_global_norm(grads, c.MAX_GRAD_NORM)
 
             # Train global network
             global_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
@@ -205,8 +207,7 @@ class Policy(object):
             vf_sum = tf.summary.scalar("model/value_loss", vf_loss / bs)
             ent_sum = tf.summary.scalar("model/entropy", entropy / bs)
             si_sum = tf.summary.image("model/state", self.x)
-            glob_sum = tf.summary.scalar("model/grad_global_norm",
-                                         tf.global_norm(grads))
+            glob_sum = tf.summary.scalar("model/grad_global_norm", norm)
             var_glob_sum = tf.summary.scalar("model/var_global_norm",
                                              tf.global_norm(global_vars))
             self.summary_op = tf.summary.merge([pi_sum, vf_sum, ent_sum, si_sum,
