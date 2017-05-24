@@ -54,20 +54,13 @@ class Worker(threading.Thread):
                     self.is_running = True
                     logger.info("RESTARTING WORKER %d", self.worker_index)
 
-    def restart(self):
-        """
-        If an environment crashes, want to restart it
-        """
-        self.is_running = True
-        time.sleep(c.SLEEP_TIME)
-        self.run()
-
     def _run(self):
         """
         Main worker loop. Loads experiences into the global q.
         """
-        env = envs.create_env()
-        rollout_provider = runner.run_env(env, self.policy,
+
+        self.env = envs.create_env()
+        rollout_provider = runner.run_env(self.env, self.policy,
                                           self.worker_index)
         while True:
             self.local_steps += 1

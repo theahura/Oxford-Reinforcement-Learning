@@ -7,11 +7,17 @@ import logging
 
 import tensorflow as tf
 import universe  # register the universe environments
+from universe import spaces
 
 import constants as c
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+def convert_to_uni_action(left=False, right=False, space=False):
+    return [spaces.KeyEvent.by_name('space', down=space),
+            spaces.KeyEvent.by_name('left', down=left),
+            spaces.KeyEvent.by_name('right', down=right)]
 
 class PartialRollout(object):
     """
@@ -69,7 +75,11 @@ def run_env(env, policy, worker_index):
 
             if c.WORKER_DEBUG:
                 logger.info("WORKER %d TRANSLATED ACTION: %s", worker_index,
-                            str(final_action))
+                            str(c.ACTIONS[final_action]))
+
+            left, right, up = c.ACTIONS[final_action]
+
+            final_action = convert_to_uni_action(left, right, up)
             # Run the action
             state, reward, terminal, info = env.step(final_action)
 
@@ -79,13 +89,14 @@ def run_env(env, policy, worker_index):
             if terminal:
                 reward = c.END_GAME_REW
             elif reward == 0:
-                reward = reward*c.REW_SCALE
-            else:
                 reward = c.ZERO_REW_VAL
+            else:
+                reward = reward*c.REW_SCALE
 
             if c.WORKER_DEBUG:
                 logger.info("WORKER %d REW: %s", worker_index, str(reward))
                 logger.info("WORKER %d TERM: %s", worker_index, str(terminal))
+                logger.info("WORKER %d INFO: %s", worker_index, str(info))
 
             # Process the action results
             rollout.add(last_state, action, reward, value, terminal,

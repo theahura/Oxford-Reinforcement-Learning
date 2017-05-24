@@ -13,7 +13,9 @@ import scipy.signal
 import tensorflow as tf
 
 import constants as c
+import envs
 import model
+import runner
 from worker import Worker
 
 logger = logging.getLogger(__name__)
@@ -179,3 +181,16 @@ class A3C(object):
                                             sess.run(self.global_steps))
 
             self.summary_writer.flush()
+
+    def play(self):
+        """
+        Play instead of train.
+        """
+        if c.GLOBAL_DEBUG:
+            logger.info("PLAYING GAME")
+        env = envs.create_env()
+        rollout_provider = runner.run_env(env, self.global_network, 0)
+        steps = 0
+        while True:
+            steps += 1
+            print process_rollout(next(rollout_provider))
