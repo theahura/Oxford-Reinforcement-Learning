@@ -184,7 +184,7 @@ class Policy(object):
                 tf.nn.l2_loss(x) for x in local_vars)
 
             self.loss = pi_loss + c.VF_LOSS_CONST * vf_loss - (
-                entropy * c.ENT_CONST) + c.REG_CONST * regularizer
+                entropy * c.ENT_CONST) + regularizer
 
             grads = tf.gradients(self.loss, self.var_list)
             grads, _ = tf.clip_by_global_norm(grads, c.MAX_GRAD_NORM)
@@ -193,7 +193,7 @@ class Policy(object):
             global_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                             'global')
             grads_and_vars = list(zip(grads, global_vars))
-            self.adam_opt = tf.train.GradientDescentOptimizer(
+            self.adam_opt = tf.train.AdamOptimizer(
                 learning_rate=c.LEARNING_RATE)
             self.train = self.adam_opt.apply_gradients(grads_and_vars)
 
