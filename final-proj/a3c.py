@@ -80,7 +80,7 @@ class A3C(object):
             for i in range(num_workers):
                 with tf.variable_scope('worker{}'.format(i)):
                     # Create a new worker thread
-                    worker = Worker(sess, self.global_q, i)
+                    worker = Worker(sess, self.global_q, i, c.HUMAN_TRAIN)
 
                     # And sync it to the global thread
                     self.sync = tf.group(*[v1.assign(v2) for v1, v2 in

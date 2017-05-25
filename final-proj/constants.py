@@ -11,7 +11,7 @@ WINDOW_END = (500, 370)
 WINDOW_HEIGHT = WINDOW_END[1] - WINDOW_START[1]
 WINDOW_WIDTH = WINDOW_END[0] - WINDOW_START[0]
 #       Actions
-ACTIONS = [(0, 0, 1), (0, 1, 0), (1, 0, 0), (1, 0, 1), (0, 1, 1)]
+ACTIONS = [(0, 0, 0), (0, 0, 1), (0, 1, 0), (1, 0, 0), (1, 0, 1), (0, 1, 1)]
 NUM_ACTIONS = len(ACTIONS)
 #       Reward function
 ZERO_REW_VAL = 0 # Punish not growing
@@ -30,6 +30,7 @@ FILTER_SHAPE = [3, 3]
 STRIDE = 2
 OUTPUT_CHANNELS = 32
 LSTM_UNITS = 512
+ADAM = True # Whether to use adamopt or grad descent
 #       A3C Params
 VF_LOSS_CONST = 0.5
 ENT_CONST = 0.01 # Encourage exploration with more entropy
@@ -43,13 +44,7 @@ INPUT_KEEP_PROB = 0.5 # Dropout for lstm
 OUTPUT_KEEP_PROB = 0.5
 CONV_KEEP_PROB = 0.5 # Dropout for convnet
 MAX_GRAD_NORM = 60.0
-REG_CONST = 0.00001 # L2 norm regularization
-
-# Misc
-STEPS_TO_SAVE = 5 # saves every n lives or updates (i.e. env_steps*n steps)
-ENV_STEPS = 100.0*FPS # Number of steps in runner before updating global
-NUM_WORKERS = 6 # Number of threads to use. Set to 1 to play instead of train
-SLEEP_TIME = 300 # Wait 5 minutes before restarts
+REG_CONST = 0.0001 # L2 norm regularization
 
 # Debugging
 DEBUG = True
@@ -59,4 +54,14 @@ WORKER_DEBUG = False
 RANDOM_POLICY = False
 CKPT_PATH = 'data/ckpt/'
 LOGDIR = 'data/logs/'
-SUM_STEPS = 5
+SUM_STEPS = 1
+
+# Misc
+STEPS_TO_SAVE = 5 # saves every n lives or updates (i.e. env_steps*n steps)
+ENV_STEPS = 100.0*FPS # Number of steps in runner before updating global
+SLEEP_TIME = 300 # Wait 5 minutes before restarts
+
+# Args
+HUMAN_TRAIN = False # Learn over the shoulder
+PLAY = False # Play only global
+NUM_WORKERS = 1 if PLAY else 2 if HUMAN_TRAIN else 6 # Number of threads to use

@@ -4,17 +4,22 @@ Description: Runner for slither.io AI.
 """
 
 import logging
+import sys
 
+import numpy as np
 import tensorflow as tf
-import universe  # register the universe environments
 from universe import spaces
 
 import constants as c
+import humantest
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 def convert_to_uni_action(left=False, right=False, space=False):
+    """
+    Goes from actions to universe actions.
+    """
     return [spaces.KeyEvent.by_name('space', down=space),
             spaces.KeyEvent.by_name('left', down=left),
             spaces.KeyEvent.by_name('right', down=right)]
@@ -36,6 +41,9 @@ class PartialRollout(object):
         self.total_reward = 0
 
     def add(self, state, action, reward, value, terminal, features):
+        """
+        Adds a new event to the rollout.
+        """
         self.states += [state]
         self.actions += [action]
         self.rewards += [reward]
@@ -53,7 +61,10 @@ class PartialRollout(object):
         self.terminal = other.terminal
         self.features.extend(other.features)
 
-def run_env(env, policy, worker_index):
+def run_env(env, policy, worker_index, humantrain=False):
+    """
+    Runs the universe environment
+    """
     sess = tf.get_default_session()
     last_state = env.reset()
     last_c_in, last_h_in = policy.get_initial_features()
@@ -63,13 +74,17 @@ def run_env(env, policy, worker_index):
     while True:
         rollout = PartialRollout(worker_index)
 
+        action = np.array([1, 0, 0, 0, 0, 0])
         while True:
-
             steps += 1
-
             # Get the action
-            output = policy.get_action(last_state, last_c_in, last_h_in)
-            action, value, features = output[0], output[1], output[2:]
+            if not humantrain:
+                output = policy.get_action(last_state, last_c_in, last_h_in)
+                action, value, features = output[0], output[1], output[2:]
+            else:
+                if humantest.isData():
+                    ch = sys.stdin.read(1)
+                    action = humantest.convert_to_action(ch)
 
             final_action = action.argmax()
 

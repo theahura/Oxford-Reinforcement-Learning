@@ -9,6 +9,7 @@ import logging
 
 import constants as c
 import envs
+import humantest
 import model
 import runner
 
@@ -20,7 +21,7 @@ class Worker(threading.Thread):
     Run the thread to interact with the environment.
     """
 
-    def __init__(self, sess, global_q, worker_index):
+    def __init__(self, sess, global_q, worker_index, humantrain=False):
 
         if c.DEBUG:
             logger.info('WORKER %d STARTED.', worker_index)
@@ -32,6 +33,7 @@ class Worker(threading.Thread):
         self.policy = model.get_model(sess, 'local', worker_index)
         self.local_steps = 0
         self.is_running = True
+        self.humantrain = humantrain
 
     def start_runner(self):
         """
@@ -46,7 +48,10 @@ class Worker(threading.Thread):
         while True:
             with self.sess.as_default():
                 try:
-                    self._run()
+                    if self.humantrain:
+                        self._run_human()
+                    else:
+                        self._run()
                 except:
                     logger.info("WORKER %d DIED", self.worker_index)
                     self.is_running = False
@@ -67,3 +72,20 @@ class Worker(threading.Thread):
             self.q.put(next(rollout_provider))
             logger.info("STEPS IN WORKER %d: %d", self.worker_index,
                         self.local_steps)
+
+    def _run_human(self):
+        """
+        Over the shoulder learning.
+        """
+        try:
+            humantest.setup_keyboard()
+            env = envs.create_env()
+            rollout_provider = runner.run_env(env, self.global_network, 0, True)
+            steps = 0
+            while True:
+                steps += 1
+                self.q.put(next(rollout_provider))
+                logger.info("STEPS IN WORKER %d: %d", self.worker_index,
+                            self.local_steps)
+        finally:
+            humantest.return_keyboard()

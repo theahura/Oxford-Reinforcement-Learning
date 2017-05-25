@@ -161,7 +161,7 @@ class Policy(object):
         # Other stuff
         self.state_out = [state_c[:1, :], state_h[:1, :]]
         self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                          tf.get_variable_scope().name)
+                                          'worker{}'.format(worker_index))
 
         if scope != 'global':
             # TF graph for getting the gradients of the local model.
@@ -195,8 +195,14 @@ class Policy(object):
             global_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                             'global')
             grads_and_vars = list(zip(grads, global_vars))
-            self.adam_opt = tf.train.AdamOptimizer(
+
+
+            self.adam_opt = tf.train.GradientDescentOptimizer(
                 learning_rate=c.LEARNING_RATE)
+            if c.ADAM:
+                self.adam_opt = tf.train.AdamOptimizer(
+                    learning_rate=c.LEARNING_RATE)
+
             self.train = self.adam_opt.apply_gradients(grads_and_vars)
 
             # Summary ops
