@@ -191,7 +191,9 @@ class Policy(object):
                 entropy * c.ENT_CONST) + regularizer
 
             grads = tf.gradients(self.loss, local_vars)
-            grads, norm = tf.clip_by_global_norm(grads, c.MAX_GRAD_NORM)
+
+            if c.MAX_GRAD_NORM:
+                grads, norm = tf.clip_by_global_norm(grads, c.MAX_GRAD_NORM)
 
             # Train global network
             global_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
@@ -215,7 +217,9 @@ class Policy(object):
             vf_sum = tf.summary.scalar("model/value_loss", vf_loss / bs)
             ent_sum = tf.summary.scalar("model/entropy", entropy / bs)
             si_sum = tf.summary.image("model/state", self.x)
-            glob_sum = tf.summary.scalar("model/grad_global_norm", norm)
+            glob_sum = tf.summary.scalar("model/grad_global_norm",
+                                         norm if norm else tf.global_norm(
+                                             grads))
             var_glob_sum = tf.summary.scalar("model/var_global_norm",
                                              tf.global_norm(global_vars))
             self.summary_op = tf.summary.merge([pi_sum, vf_sum, ent_sum, si_sum,

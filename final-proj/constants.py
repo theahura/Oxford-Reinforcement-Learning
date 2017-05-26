@@ -43,14 +43,13 @@ LAMBDA = 1.0
 INPUT_KEEP_PROB = 0.5 # Dropout for lstm
 OUTPUT_KEEP_PROB = 0.5
 CONV_KEEP_PROB = 0.5 # Dropout for convnet
-MAX_GRAD_NORM = 60.0
 REG_CONST = 0.0001 # L2 norm regularization
 
 # Debugging
 DEBUG = True
 GLOBAL_DEBUG = True
 MODEL_DEBUG = False
-WORKER_DEBUG = False
+WORKER_DEBUG = True
 RANDOM_POLICY = False
 CKPT_PATH = 'data/ckpt/'
 LOGDIR = 'data/logs/'
@@ -61,8 +60,10 @@ STEPS_TO_SAVE = 5 # saves every n lives or updates (i.e. env_steps*n steps)
 ENV_STEPS = 100.0*FPS # Number of steps in runner before updating global
 SLEEP_TIME = 60 # Wait 5 minutes before restarts
 
-# Args
+# Configs
 HUMAN_TRAIN = True # Learn over the shoulder
 ASYNC_HUMAN_TRAIN = False
 PLAY = False # Play only global
 NUM_WORKERS = 1 if PLAY or HUMAN_TRAIN else 2 if ASYNC_HUMAN_TRAIN else 6
+MAX_GRAD_NORM = None if HUMAN_TRAIN or ASYNC_HUMAN_TRAIN else 60.0
+

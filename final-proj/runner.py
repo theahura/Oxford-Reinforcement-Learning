@@ -80,7 +80,6 @@ def run_env(env, policy, worker_index, humantrain=False):
         firstaction = action
 
         while True:
-            logger.info("IN GAME")
             steps += 1
 
             # Get the action
