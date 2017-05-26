@@ -213,5 +213,6 @@ class A3C(object):
                 self.global_q.put(next(rollout_provider))
                 self.process()
                 logger.info("STEPS IN WORKER %d: %d", 0, steps)
+                quit()
         finally:
             humantest.return_keyboard()

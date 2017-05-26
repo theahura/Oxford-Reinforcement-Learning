@@ -78,7 +78,6 @@ def run_env(env, policy, worker_index, humantrain=False):
         # Stop adding failed lives to the rollout
         action = np.array([1, 0, 0, 0, 0, 0])
         firstaction = action
-        count_life = False
 
         while True:
             steps += 1
@@ -95,9 +94,6 @@ def run_env(env, policy, worker_index, humantrain=False):
                     action = np.array(humantest.convert_to_action(ch))
                 else:
                     action = np.array(humantest.convert_to_action(None))
-
-            if not np.array_equal(firstaction, action):
-                count_life = True
 
             final_action = action.argmax()
 
@@ -151,5 +147,4 @@ def run_env(env, policy, worker_index, humantrain=False):
             else:
                 rollout.r = policy.value(last_state, last_c_in, last_h_in)
 
-        if count_life:
-            yield rollout
+        yield rollout
