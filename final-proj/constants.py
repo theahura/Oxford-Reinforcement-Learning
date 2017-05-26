@@ -48,7 +48,7 @@ REG_CONST = 0.0001 # L2 norm regularization
 
 # Debugging
 DEBUG = True
-GLOBAL_DEBUG = True
+GLOBAL_DEBUG = False
 MODEL_DEBUG = False
 WORKER_DEBUG = False
 RANDOM_POLICY = False
@@ -59,9 +59,10 @@ SUM_STEPS = 1
 # Misc
 STEPS_TO_SAVE = 5 # saves every n lives or updates (i.e. env_steps*n steps)
 ENV_STEPS = 100.0*FPS # Number of steps in runner before updating global
-SLEEP_TIME = 300 # Wait 5 minutes before restarts
+SLEEP_TIME = 60 # Wait 5 minutes before restarts
 
 # Args
-HUMAN_TRAIN = False # Learn over the shoulder
+HUMAN_TRAIN = True # Learn over the shoulder
+ASYNC_HUMAN_TRAIN = False
 PLAY = False # Play only global
-NUM_WORKERS = 1 if PLAY else 2 if HUMAN_TRAIN else 6 # Number of threads to use
+NUM_WORKERS = 1 if PLAY or HUMAN_TRAIN else 2 if ASYNC_HUMAN_TRAIN else 6

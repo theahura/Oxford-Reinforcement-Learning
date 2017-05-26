@@ -160,10 +160,8 @@ class Policy(object):
 
         # Other stuff
         self.state_out = [state_c[:1, :], state_h[:1, :]]
-        self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                          'worker{}'.format(worker_index))
 
-        if scope != 'global':
+        if scope != 'global' or c.HUMAN_TRAIN:
             # TF graph for getting the gradients of the local model.
             self.ac = tf.placeholder(tf.float32, [None, action_size],
                                      name="ac")
@@ -182,13 +180,17 @@ class Policy(object):
             local_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                            'worker{}'.format(worker_index))
 
+            if c.HUMAN_TRAIN:
+                local_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                               'global')
+
             regularizer = c.REG_CONST * sum(
                 tf.nn.l2_loss(x) for x in local_vars)
 
             self.loss = pi_loss + c.VF_LOSS_CONST * vf_loss - (
                 entropy * c.ENT_CONST) + regularizer
 
-            grads = tf.gradients(self.loss, self.var_list)
+            grads = tf.gradients(self.loss, local_vars)
             grads, norm = tf.clip_by_global_norm(grads, c.MAX_GRAD_NORM)
 
             # Train global network
@@ -219,6 +221,10 @@ class Policy(object):
             self.summary_op = tf.summary.merge([pi_sum, vf_sum, ent_sum, si_sum,
                                                 glob_sum, var_glob_sum,
                                                 total_rew])
+            if c.HUMAN_TRAIN:
+                # Saving op
+                vars_to_save = tf.get_collection(tf.GraphKeys.VARIABLES, 'global')
+                self.saver = tf.train.Saver(vars_to_save)
         else:
             # Saving op
             vars_to_save = tf.get_collection(tf.GraphKeys.VARIABLES, 'global')

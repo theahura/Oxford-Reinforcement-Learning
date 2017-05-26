@@ -65,6 +65,7 @@ def run_env(env, policy, worker_index, humantrain=False):
     """
     Runs the universe environment
     """
+
     sess = tf.get_default_session()
     last_state = env.reset()
     last_c_in, last_h_in = policy.get_initial_features()
@@ -77,14 +78,17 @@ def run_env(env, policy, worker_index, humantrain=False):
         action = np.array([1, 0, 0, 0, 0, 0])
         while True:
             steps += 1
+
             # Get the action
             if not humantrain:
                 output = policy.get_action(last_state, last_c_in, last_h_in)
                 action, value, features = output[0], output[1], output[2:]
             else:
+                output = policy.get_action(last_state, last_c_in, last_h_in)
+                value, features = output[1], output[2:]
                 if humantest.isData():
                     ch = sys.stdin.read(1)
-                    action = humantest.convert_to_action(ch)
+                    action = np.array(humantest.convert_to_action(ch))
 
             final_action = action.argmax()
 
@@ -132,7 +136,7 @@ def run_env(env, policy, worker_index, humantrain=False):
                 rewards = 0
                 last_c_in, last_h_in = policy.get_initial_features()
                 break
-            elif steps % c.ENV_STEPS == 0:
+            elif steps % c.ENV_STEPS == 0 and not c.HUMAN_TRAIN:
                 rollout.total_reward = rewards
                 break
             else:

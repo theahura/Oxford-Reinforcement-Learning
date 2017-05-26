@@ -14,6 +14,7 @@ import tensorflow as tf
 
 import constants as c
 import envs
+import humantest
 import model
 import runner
 from worker import Worker
@@ -68,7 +69,7 @@ class A3C(object):
             with tf.variable_scope('global'):
                 self.global_steps = tf.Variable(0, name='global_step',
                                                 trainable=False)
-                self.global_network = model.get_model(sess, 'global')
+                self.policy = model.get_model(sess, 'global')
                 self.glob_inc = tf.assign(self.global_steps,
                                           self.global_steps+1)
 
@@ -80,12 +81,12 @@ class A3C(object):
             for i in range(num_workers):
                 with tf.variable_scope('worker{}'.format(i)):
                     # Create a new worker thread
-                    worker = Worker(sess, self.global_q, i, c.HUMAN_TRAIN)
+                    worker = Worker(sess, self.global_q, i, c.ASYNC_HUMAN_TRAIN)
 
                     # And sync it to the global thread
                     self.sync = tf.group(*[v1.assign(v2) for v1, v2 in
                                            zip(worker.policy.var_list,
-                                               self.global_network.var_list)])
+                                               self.policy.var_list)])
                     sess.run(self.sync)
                     self.workers.append(worker)
 
@@ -157,7 +158,8 @@ class A3C(object):
             logger.info("GLOBAL UPDATE DONE")
 
         # Copy the changes back down to the local network
-        sess.run(self.sync)
+        if not c.HUMAN_TRAIN:
+            sess.run(self.sync)
 
         if c.GLOBAL_DEBUG:
             logger.info("GLOBAL SYNC FINISHED")
@@ -165,11 +167,11 @@ class A3C(object):
         # Global network has one more experience
         sess.run(self.glob_inc)
 
-        if sess.run(self.global_steps) % c.STEPS_TO_SAVE == 0:
+        if sess.run(self.global_steps) % c.STEPS_TO_SAVE == 0 or c.HUMAN_TRAIN:
             logger.info("SAVING")
             checkpoint_path = os.path.join(c.CKPT_PATH, 'slither.ckpt')
-            self.global_network.saver.save(sess, checkpoint_path,
-                                           global_step=self.global_steps)
+            self.policy.saver.save(sess, checkpoint_path,
+                                   global_step=self.global_steps)
 
         if sess.run(self.global_steps) % c.LEARNING_RATE_STEP == 0:
             c.LEARNING_RATE = c.LEARNING_RATE * c.LEARNING_RATE_SCALE
@@ -189,8 +191,27 @@ class A3C(object):
         if c.GLOBAL_DEBUG:
             logger.info("PLAYING GAME")
         env = envs.create_env()
-        rollout_provider = runner.run_env(env, self.global_network, 0)
+        rollout_provider = runner.run_env(env, self.policy, 0)
         steps = 0
         while True:
             steps += 1
             print process_rollout(next(rollout_provider))
+
+    def humantrain(self):
+        """
+        Over the shoulder learning.
+        """
+        logger.info("RUNNING LOCAL HUMAN")
+        self.workers.append(self)
+        try:
+            humantest.setup_keyboard()
+            env = envs.create_env()
+            rollout_provider = runner.run_env(env, self.policy, 0, True)
+            steps = 0
+            while True:
+                steps += 1
+                self.global_q.put(next(rollout_provider))
+                self.process()
+                logger.info("STEPS IN WORKER %d: %d", 0, steps)
+        finally:
+            humantest.return_keyboard()

@@ -6,6 +6,7 @@ Description: Where the environment is run and experiences are generated.
 import threading
 import time
 import logging
+import sys
 
 import constants as c
 import envs
@@ -52,8 +53,9 @@ class Worker(threading.Thread):
                         self._run_human()
                     else:
                         self._run()
-                except:
+                except Exception as e:
                     logger.info("WORKER %d DIED", self.worker_index)
+                    logger.info("%s", str(e))
                     self.is_running = False
                     time.sleep(c.SLEEP_TIME)
                     self.is_running = True
@@ -75,12 +77,13 @@ class Worker(threading.Thread):
 
     def _run_human(self):
         """
-        Over the shoulder learning.
+        Async over the shoulder learning.
         """
+        logger.info("RUNNING ASYNC HUMAN")
         try:
             humantest.setup_keyboard()
             env = envs.create_env()
-            rollout_provider = runner.run_env(env, self.global_network, 0, True)
+            rollout_provider = runner.run_env(env, self.policy, 0, True)
             steps = 0
             while True:
                 steps += 1

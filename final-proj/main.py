@@ -18,7 +18,10 @@ with sess.as_default():
     sess.run(tf.variables_initializer(unitialized_vars))
 
     if c.NUM_WORKERS - 1 <= 0:
-        a3c.play()
+        if c.HUMAN_TRAIN:
+            a3c.humantrain()
+        else:
+            a3c.play()
     else:
         # Kick off all of the worker threads that update the global graphs
         a3c.start_workers()
