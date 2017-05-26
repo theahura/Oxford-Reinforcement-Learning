@@ -48,7 +48,7 @@ REG_CONST = 0.0001 # L2 norm regularization
 
 # Debugging
 DEBUG = True
-GLOBAL_DEBUG = False
+GLOBAL_DEBUG = True
 MODEL_DEBUG = False
 WORKER_DEBUG = False
 RANDOM_POLICY = False
