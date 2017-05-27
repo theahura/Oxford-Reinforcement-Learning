@@ -49,7 +49,7 @@ REG_CONST = 0.0001 # L2 norm regularization
 DEBUG = True
 GLOBAL_DEBUG = True
 MODEL_DEBUG = False
-WORKER_DEBUG = True
+WORKER_DEBUG = False
 RANDOM_POLICY = False
 CKPT_PATH = 'data/ckpt/'
 LOGDIR = 'data/logs/'
@@ -61,9 +61,12 @@ ENV_STEPS = 100.0*FPS # Number of steps in runner before updating global
 SLEEP_TIME = 60 # Wait 5 minutes before restarts
 
 # Configs
-HUMAN_TRAIN = True # Learn over the shoulder
+HUMAN_TRAIN = False # Learn over the shoulder
 ASYNC_HUMAN_TRAIN = False
-PLAY = False # Play only global
+PLAY = True # Play only global
+
+if sum([HUMAN_TRAIN, ASYNC_HUMAN_TRAIN, PLAY]) > 1:
+    raise ValueError
+
 NUM_WORKERS = 1 if PLAY or HUMAN_TRAIN else 2 if ASYNC_HUMAN_TRAIN else 6
 MAX_GRAD_NORM = None if HUMAN_TRAIN or ASYNC_HUMAN_TRAIN else 60.0
-

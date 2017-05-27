@@ -192,6 +192,7 @@ class Policy(object):
 
             grads = tf.gradients(self.loss, local_vars)
 
+            norm = None
             if c.MAX_GRAD_NORM:
                 grads, norm = tf.clip_by_global_norm(grads, c.MAX_GRAD_NORM)
 

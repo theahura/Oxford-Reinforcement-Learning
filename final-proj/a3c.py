@@ -142,7 +142,7 @@ class A3C(object):
             logger.info("TOTAL REWARD: %d", rollout.total_reward)
 
         for w in self.workers:
-            if c.GLOBAL_DEBUG:
+            if c.GLOBAL_DEBUG and not c.HUMAN_TRAIN:
                 logger.info("WORKER %d RUNNING: %s", w.worker_index,
                             w.is_running)
 
@@ -168,7 +168,7 @@ class A3C(object):
         sess.run(self.glob_inc)
 
         if sess.run(self.global_steps) % c.STEPS_TO_SAVE == 0 or c.HUMAN_TRAIN:
-            logger.info("SAVING")
+            logger.info("SAVING %d", sess.run(self.global_steps))
             checkpoint_path = os.path.join(c.CKPT_PATH, 'slither.ckpt')
             self.policy.saver.save(sess, checkpoint_path,
                                    global_step=self.global_steps)
