@@ -75,10 +75,6 @@ def run_env(env, policy, worker_index, humantrain=False):
     while True:
         rollout = PartialRollout(worker_index)
 
-        # Stop adding failed lives to the rollout
-        action = np.array([1, 0, 0, 0, 0, 0])
-        firstaction = action
-
         while True:
             steps += 1
 
