@@ -74,7 +74,7 @@ def run_env(env, policy, worker_index, humantrain=False):
 
     while True:
         rollout = PartialRollout(worker_index)
-
+        action = np.array([1, 0, 0, 0, 0, 0])
         while True:
             steps += 1
 
@@ -117,14 +117,12 @@ def run_env(env, policy, worker_index, humantrain=False):
                 logger.info("WORKER %d REW: %s", worker_index, str(reward))
                 logger.info("WORKER %d TERM: %s", worker_index, str(terminal))
                 logger.info("WORKER %d INFO: %s", worker_index, str(info))
+                logger.info("WORKER %d TOTAL REW: %s", worker_index,
+                            str(rewards))
 
             # Process the action results
             rollout.add(last_state, action, reward, value, terminal,
                         (last_c_in, last_h_in))
-
-            if c.WORKER_DEBUG:
-                logger.info("WORKER %d TOTAL REW: %s", worker_index,
-                            str(rewards))
 
             # Reset for next loop
             last_state = state
@@ -137,7 +135,7 @@ def run_env(env, policy, worker_index, humantrain=False):
                 rewards = 0
                 last_c_in, last_h_in = policy.get_initial_features()
                 break
-            elif steps % c.ENV_STEPS == 0 and not c.HUMAN_TRAIN:
+            elif steps % c.ENV_STEPS == 0:
                 rollout.total_reward = rewards
                 break
             else:

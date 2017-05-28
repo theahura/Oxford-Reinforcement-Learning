@@ -92,7 +92,8 @@ def linear(x, size, name, initializer):
 
 def categorical_sample(logits, d):
     """
-    Gets the actual output id.
+    Gets the actual output id using a multinomial sample based on the
+    likelihoods of each action.
     """
     value = tf.squeeze(tf.multinomial(
         logits - tf.reduce_max(logits, [1], keep_dims=True), 1), [1])
@@ -161,8 +162,39 @@ class Policy(object):
         # Other stuff
         self.state_out = [state_c[:1, :], state_h[:1, :]]
 
-        if scope != 'global' or c.HUMAN_TRAIN:
-            # TF graph for getting the gradients of the local model.
+        # Training
+        if c.HUMAN_TRAIN or c.ASYNC_HUMAN_TRAIN:
+            # Training algo if human run is simple crossent
+            self.labels = tf.placeholder(tf.float32, [None, c.NUM_ACTIONS])
+
+            self.loss = tf.reduce_mean(
+                tf.nn.softmax_cross_entropy_with_logits(labels=self.labels,
+                                                        logits=self.logits))
+
+            self.var_list = tf.get_collection(
+                tf.GraphKeys.TRAINABLE_VARIABLES, 'global')
+
+            self.train = tf.train.AdamOptimizer(
+                learning_rate=c.LEARNING_RATE).minimize(self.loss)
+
+            # Saving op
+            vars_to_save = tf.get_collection(tf.GraphKeys.VARIABLES, 'global')
+            self.saver = tf.train.Saver(vars_to_save)
+
+            # Summary ops
+            self.total_rew = tf.placeholder(tf.float32, name='totrew')
+            bs = tf.to_float(tf.shape(self.x)[0])
+            total_rew = tf.summary.scalar("model/total_reward", self.total_rew)
+            si_sum = tf.summary.image("model/state", self.x)
+            var_glob_sum = tf.summary.scalar("model/var_global_norm",
+                                             tf.global_norm(self.var_list))
+            loss_sum = tf.summary.scalar("model/loss",
+                                         tf.reduce_mean(self.loss))
+            self.summary_op = tf.summary.merge([si_sum, var_glob_sum,
+                                                total_rew, loss_sum])
+
+        elif scope != 'global':
+            # TF graph for getting the gradients of the local model with A3C
             self.ac = tf.placeholder(tf.float32, [None, action_size],
                                      name="ac")
             self.adv = tf.placeholder(tf.float32, [None], name='adv')
@@ -177,20 +209,16 @@ class Policy(object):
             entropy = - tf.reduce_sum(prob * log_prob)
 
             # Regularization
-            local_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                           'worker{}'.format(worker_index))
-
-            if c.HUMAN_TRAIN:
-                local_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                               'global')
+            self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                              'worker{}'.format(worker_index))
 
             regularizer = c.REG_CONST * sum(
-                tf.nn.l2_loss(x) for x in local_vars)
+                tf.nn.l2_loss(x) for x in self.var_list)
 
             self.loss = pi_loss + c.VF_LOSS_CONST * vf_loss - (
                 entropy * c.ENT_CONST) + regularizer
 
-            grads = tf.gradients(self.loss, local_vars)
+            grads = tf.gradients(self.loss, self.var_list)
 
             norm = None
             if c.MAX_GRAD_NORM:
@@ -200,7 +228,6 @@ class Policy(object):
             global_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                             'global')
             grads_and_vars = list(zip(grads, global_vars))
-
 
             self.adam_opt = tf.train.GradientDescentOptimizer(
                 learning_rate=c.LEARNING_RATE)
@@ -219,18 +246,17 @@ class Policy(object):
             ent_sum = tf.summary.scalar("model/entropy", entropy / bs)
             si_sum = tf.summary.image("model/state", self.x)
             glob_sum = tf.summary.scalar("model/grad_global_norm",
-                                         norm if norm else tf.global_norm(
+                                         norm if norm is not None else tf.global_norm(
                                              grads))
             var_glob_sum = tf.summary.scalar("model/var_global_norm",
                                              tf.global_norm(global_vars))
             self.summary_op = tf.summary.merge([pi_sum, vf_sum, ent_sum, si_sum,
                                                 glob_sum, var_glob_sum,
                                                 total_rew])
-            if c.HUMAN_TRAIN:
-                # Saving op
-                vars_to_save = tf.get_collection(tf.GraphKeys.VARIABLES, 'global')
-                self.saver = tf.train.Saver(vars_to_save)
         else:
+            self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                              'global')
+
             # Saving op
             vars_to_save = tf.get_collection(tf.GraphKeys.VARIABLES, 'global')
             self.saver = tf.train.Saver(vars_to_save)
@@ -282,15 +308,20 @@ class Policy(object):
 
         inputs = {
             self.x: ob,
-            self.ac: ac,
+            self.total_rew: total_reward,
             self.c_in: c_in,
-            self.h_in: h_in,
-            self.r: reward,
-            self.adv: adv,
-            self.total_rew: total_reward
+            self.h_in: h_in
         }
 
+        if c.HUMAN_TRAIN or c.ASYNC_HUMAN_TRAIN:
+            logger.info("LABELS: %s", str(ac))
+            inputs[self.labels] = ac
+        else:
+            inputs[self.adv] = adv
+            inputs[self.ac] = ac
+            inputs[self.r] = reward
+
         if c.MODEL_DEBUG:
-            logger.info("WHAT: %s", str(inputs))
+            logger.info("INPUTS: %s", str(inputs))
 
         return sess.run(outputs, feed_dict=inputs)

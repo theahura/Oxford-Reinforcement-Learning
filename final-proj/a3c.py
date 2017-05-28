@@ -50,7 +50,7 @@ def process_rollout(rollout):
         'r': batch_r,
         'terminal': rollout.terminal,
         'features': features,
-        'worker': rollout.worker
+        'worker': rollout.worker,
     }
     return batch
 
@@ -84,10 +84,7 @@ class A3C(object):
                     worker = Worker(sess, self.global_q, i, c.ASYNC_HUMAN_TRAIN)
 
                     # And sync it to the global thread
-                    self.sync = tf.group(*[v1.assign(v2) for v1, v2 in
-                                           zip(worker.policy.var_list,
-                                               self.policy.var_list)])
-                    sess.run(self.sync)
+                    worker.sync(sess, self.policy.var_list)
                     self.workers.append(worker)
 
         self.summary_writer = tf.summary.FileWriter(c.LOGDIR)
@@ -141,8 +138,8 @@ class A3C(object):
             logger.info("WORKER INDEX: %d", batch['worker'])
             logger.info("TOTAL REWARD: %d", rollout.total_reward)
 
-        for w in self.workers:
-            if c.GLOBAL_DEBUG and not c.HUMAN_TRAIN:
+        if c.GLOBAL_DEBUG and not c.HUMAN_TRAIN:
+            for w in self.workers:
                 logger.info("WORKER %d RUNNING: %s", w.worker_index,
                             w.is_running)
 
@@ -159,7 +156,7 @@ class A3C(object):
 
         # Copy the changes back down to the local network
         if not c.HUMAN_TRAIN:
-            sess.run(self.sync)
+            worker.sync(sess, self.policy.var_list)
 
         if c.GLOBAL_DEBUG:
             logger.info("GLOBAL SYNC FINISHED")
@@ -214,6 +211,10 @@ class A3C(object):
                 self.process()
                 logger.info("STEPS IN WORKER %d: %d", 0, steps)
                 raise ValueError
+        except Exception as e:
+            logger.info("ERROR: %s", str(e))
+            humantest.return_keyboard()
+            quit()
         finally:
             humantest.return_keyboard()
             quit()

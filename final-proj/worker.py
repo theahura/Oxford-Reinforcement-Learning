@@ -8,6 +8,8 @@ import time
 import logging
 import sys
 
+import tensorflow as tf
+
 import constants as c
 import envs
 import humantest
@@ -35,6 +37,11 @@ class Worker(threading.Thread):
         self.local_steps = 0
         self.is_running = True
         self.humantrain = humantrain
+
+    def sync(self, sess, global_vars):
+        sync = tf.group(*[v1.assign(v2) for v1, v2 in zip(self.policy.var_list,
+                                                          global_vars)])
+        sess.run(sync)
 
     def start_runner(self):
         """

@@ -22,6 +22,7 @@ FPS = 10.0
 RESIZE_X = 128
 RESIZE_Y = 200
 OBSERVATION_SPACE = (RESIZE_X, RESIZE_Y, 1)
+MAX_GRAD_NORM = 60.0
 
 # Network Params
 #       Network Constructions
@@ -49,7 +50,7 @@ REG_CONST = 0.0001 # L2 norm regularization
 DEBUG = True
 GLOBAL_DEBUG = True
 MODEL_DEBUG = False
-WORKER_DEBUG = False
+WORKER_DEBUG = True
 RANDOM_POLICY = False
 CKPT_PATH = 'data/ckpt/'
 LOGDIR = 'data/logs/'
@@ -57,16 +58,15 @@ SUM_STEPS = 1
 
 # Misc
 STEPS_TO_SAVE = 5 # saves every n lives or updates (i.e. env_steps*n steps)
-ENV_STEPS = 100.0*FPS # Number of steps in runner before updating global
 SLEEP_TIME = 60 # Wait 5 minutes before restarts
 
 # Configs
 HUMAN_TRAIN = False # Learn over the shoulder
 ASYNC_HUMAN_TRAIN = False
-PLAY = True # Play only global
+PLAY = False # Play only global, without training
 
 if sum([HUMAN_TRAIN, ASYNC_HUMAN_TRAIN, PLAY]) > 1:
     raise ValueError
 
 NUM_WORKERS = 1 if PLAY or HUMAN_TRAIN else 2 if ASYNC_HUMAN_TRAIN else 6
-MAX_GRAD_NORM = None if HUMAN_TRAIN or ASYNC_HUMAN_TRAIN else 60.0
+ENV_STEPS = 100.0*FPS
