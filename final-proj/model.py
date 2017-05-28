@@ -178,7 +178,8 @@ class Policy(object):
                 learning_rate=c.LEARNING_RATE).minimize(self.loss)
 
             # Saving op
-            vars_to_save = tf.get_collection(tf.GraphKeys.VARIABLES, 'global')
+            vars_to_save = self.var_list + [
+                v for v in tf.global_variables() if v.name == 'global/global_step:0']
             self.saver = tf.train.Saver(vars_to_save)
 
             # Summary ops
@@ -258,7 +259,8 @@ class Policy(object):
                                               'global')
 
             # Saving op
-            vars_to_save = tf.get_collection(tf.GraphKeys.VARIABLES, 'global')
+            vars_to_save = self.var_list + [
+                v for v in tf.global_variables() if v.name == 'global/global_step:0']
             self.saver = tf.train.Saver(vars_to_save)
 
     def get_initial_features(self):

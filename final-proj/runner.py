@@ -85,6 +85,9 @@ def run_env(env, policy, worker_index, humantrain=False):
             else:
                 output = policy.get_action(last_state, last_c_in, last_h_in)
                 value, features = output[1], output[2:]
+                if c.WORKER_DEBUG and c.HUMAN_TRAIN:
+                    logger.info("PREDICTED ACTION: %s", str(c.ACTIONS[
+                        output[0].argmax()]))
                 if humantest.isData():
                     ch = sys.stdin.read(1)
                     action = np.array(humantest.convert_to_action(ch))

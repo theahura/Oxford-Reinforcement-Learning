@@ -198,7 +198,8 @@ class A3C(object):
         """
         Over the shoulder learning.
         """
-        logger.info("RUNNING LOCAL HUMAN")
+        sess = tf.get_default_session()
+        logger.info("RUNNING LOCAL HUMAN STEP %d", sess.run(self.global_steps))
         self.workers.append(self)
         try:
             humantest.setup_keyboard()

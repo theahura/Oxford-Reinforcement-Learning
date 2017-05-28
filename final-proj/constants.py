@@ -50,7 +50,7 @@ REG_CONST = 0.0001 # L2 norm regularization
 DEBUG = True
 GLOBAL_DEBUG = True
 MODEL_DEBUG = False
-WORKER_DEBUG = True
+WORKER_DEBUG = False
 RANDOM_POLICY = False
 CKPT_PATH = 'data/ckpt/'
 LOGDIR = 'data/logs/'
@@ -63,7 +63,7 @@ SLEEP_TIME = 60 # Wait 5 minutes before restarts
 # Configs
 HUMAN_TRAIN = False # Learn over the shoulder
 ASYNC_HUMAN_TRAIN = False
-PLAY = False # Play only global, without training
+PLAY = True # Play only global, without training
 
 if sum([HUMAN_TRAIN, ASYNC_HUMAN_TRAIN, PLAY]) > 1:
     raise ValueError
