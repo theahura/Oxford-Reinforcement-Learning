@@ -14,9 +14,9 @@ WINDOW_WIDTH = WINDOW_END[0] - WINDOW_START[0]
 ACTIONS = [(0, 0, 0), (0, 0, 1), (0, 1, 0), (1, 0, 0), (1, 0, 1), (0, 1, 1)]
 NUM_ACTIONS = len(ACTIONS)
 #       Reward function
-ZERO_REW_VAL = 0 # Punish not growing
+ZERO_REW_VAL = -1 # Punish not growing
 REW_SCALE = 1
-END_GAME_REW = 0 # Punish game overs
+END_GAME_REW = -10 # Punish game overs
 #       Optimizations
 FPS = 10.0
 RESIZE_X = 128

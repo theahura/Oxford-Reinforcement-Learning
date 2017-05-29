@@ -201,13 +201,18 @@ class Policy(object):
             self.adv = tf.placeholder(tf.float32, [None], name='adv')
             self.r = tf.placeholder(tf.float32, [None], name='r')
 
+            # A3C
             log_prob = tf.nn.log_softmax(self.logits)
             prob = tf.nn.softmax(self.logits)
+            #   Minimize negative pi, or make adv big. Get prob of each 1hot
+            #   action and multiply that action prob by the adv of the action
             pi_loss = -tf.reduce_sum(tf.reduce_sum(
                 log_prob * self.ac, [1]) * self.adv)
+            #   Squared difference between predicted values of states and actual
+            #   rewards earned
             vf_loss = c.VF_LOSS_CONST * tf.reduce_sum(tf.square(
                 self.vf - self.r))
-            entropy = - tf.reduce_sum(prob * log_prob)
+            entropy = c.ENT_CONST * (-tf.reduce_sum(prob * log_prob))
 
             # Regularization
             self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
@@ -216,8 +221,8 @@ class Policy(object):
             regularizer = c.REG_CONST * sum(
                 tf.nn.l2_loss(x) for x in self.var_list)
 
-            self.loss = pi_loss + c.VF_LOSS_CONST * vf_loss - (
-                entropy * c.ENT_CONST) + regularizer
+            # Loss
+            self.loss = pi_loss + vf_loss - entropy + regularizer
 
             grads = tf.gradients(self.loss, self.var_list)
 
