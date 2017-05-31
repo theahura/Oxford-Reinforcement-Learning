@@ -1,7 +1,7 @@
 """
 Inits everything and runs the task.
 """
-
+import universe
 import tensorflow as tf
 
 from a3c import A3C

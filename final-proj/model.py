@@ -249,6 +249,7 @@ class Policy(object):
             total_rew = tf.summary.scalar("model/total_reward", self.total_rew)
             pi_sum = tf.summary.scalar("model/policy_loss", pi_loss / bs)
             vf_sum = tf.summary.scalar("model/value_loss", vf_loss / bs)
+            loss_sum = tf.summary.scalar("model/total_loss", self.loss / bs)
             ent_sum = tf.summary.scalar("model/entropy", entropy / bs)
             si_sum = tf.summary.image("model/state", self.x)
             glob_sum = tf.summary.scalar("model/grad_global_norm",
@@ -256,9 +257,12 @@ class Policy(object):
                                              grads))
             var_glob_sum = tf.summary.scalar("model/var_global_norm",
                                              tf.global_norm(global_vars))
+            logprob_sum = tf.summary.scalar("model/log_prob",
+                                            tf.reduce_sum(log_prob))
+            prob_sum = tf.summary.scalar("model/prob", tf.reduce_sum(prob))
             self.summary_op = tf.summary.merge([pi_sum, vf_sum, ent_sum, si_sum,
                                                 glob_sum, var_glob_sum,
-                                                total_rew])
+                                                total_rew, loss_sum])
         else:
             self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                               'global')
