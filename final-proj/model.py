@@ -130,6 +130,9 @@ class Policy(object):
         cell = tf.contrib.rnn.DropoutWrapper(cell, c.INPUT_KEEP_PROB,
                                              c.OUTPUT_KEEP_PROB)
 
+        # To use multilayer LSTM need to add proper state holding features
+        # cell = tf.contrib.rnn.MultiRNNCell([cell for _ in range(c.LSTM_LAYERS)])
+
         self.state_size = cell.state_size
 
         # Set up the initial state for episode resets later on
@@ -260,9 +263,12 @@ class Policy(object):
             logprob_sum = tf.summary.scalar("model/log_prob",
                                             tf.reduce_sum(log_prob))
             prob_sum = tf.summary.scalar("model/prob", tf.reduce_sum(prob))
+            act_sum = tf.summary.histogram("model/actions",
+                                           tf.argmax(self.ac, 1))
             self.summary_op = tf.summary.merge([pi_sum, vf_sum, ent_sum, si_sum,
                                                 glob_sum, var_glob_sum,
-                                                total_rew, loss_sum])
+                                                total_rew, loss_sum,
+                                                logprob_sum, prob_sum, act_sum])
         else:
             self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                               'global')

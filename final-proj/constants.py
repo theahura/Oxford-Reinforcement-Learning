@@ -27,17 +27,18 @@ MAX_GRAD_NORM = 60.0
 # Network Params
 #       Network Constructions
 CONV_LAYERS = 5
+LSTM_LAYERS = 3 # Not implemented
 FILTER_SHAPE = [3, 3]
-STRIDE = 2
+STRIDE = 1
 OUTPUT_CHANNELS = 32
 LSTM_UNITS = 512
 ADAM = True # Whether to use adamopt or grad descent
 #       A3C Params
 VF_LOSS_CONST = 0.5
-ENT_CONST = 0.01 # Encourage exploration with more entropy
+ENT_CONST = 0.1 # Encourage exploration with more entropy
 LEARNING_RATE = 0.1
-LEARNING_RATE_STEP = 25
-LEARNING_RATE_SCALE = 0.99
+LEARNING_RATE_STEP = 25 # Not implemented.
+LEARNING_RATE_SCALE = 0.99 # Not implemented.
 GAMMA = 0.99 # Discount past rewards by this much
 LAMBDA = 1.0
 #       Optimizations and Convergence Tricks
@@ -62,11 +63,11 @@ SLEEP_TIME = 60 # Wait 5 minutes before restarts
 ENV_STEPS = 100.0*FPS
 
 # Configs
-HUMAN_TRAIN = True # Learn over the shoulder
+HUMAN_TRAIN = False # Learn over the shoulder
 ASYNC_HUMAN_TRAIN = False
 PLAY = False # Play only global, without training
 
 if sum([HUMAN_TRAIN, ASYNC_HUMAN_TRAIN, PLAY]) > 1:
     raise ValueError
 
-NUM_WORKERS = 1 if PLAY or HUMAN_TRAIN else 2 if ASYNC_HUMAN_TRAIN else 6
+NUM_WORKERS = 1 if PLAY or HUMAN_TRAIN else 2 if ASYNC_HUMAN_TRAIN else 4
