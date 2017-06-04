@@ -14,9 +14,9 @@ WINDOW_WIDTH = WINDOW_END[0] - WINDOW_START[0]
 ACTIONS = [(0, 0, 0), (0, 0, 1), (0, 1, 0), (1, 0, 0), (1, 0, 1), (0, 1, 1)]
 NUM_ACTIONS = len(ACTIONS)
 #       Reward function
-ZERO_REW_VAL = -1 # Punish not growing
+ZERO_REW_VAL = 0 # Punish not growing
 REW_SCALE = 1
-END_GAME_REW = -10 # Punish game overs
+END_GAME_REW = 0 # Punish game overs
 #       Optimizations
 FPS = 10.0
 RESIZE_X = 128
@@ -26,7 +26,7 @@ MAX_GRAD_NORM = 60.0
 
 # Network Params
 #       Network Constructions
-CONV_LAYERS = 5
+CONV_LAYERS = 4
 LSTM_LAYERS = 3 # Not implemented
 FILTER_SHAPE = [3, 3]
 STRIDE = 2
@@ -51,7 +51,7 @@ REG_CONST = 0.00001 # L2 norm regularization
 DEBUG = True
 GLOBAL_DEBUG = True
 MODEL_DEBUG = False
-WORKER_DEBUG = False
+WORKER_DEBUG = True
 RANDOM_POLICY = False
 CKPT_PATH = 'data/ckpt/'
 LOGDIR = 'data/logs/'
@@ -65,12 +65,7 @@ ENV_STEPS = 100.0*FPS
 # Configs
 HUMAN_TRAIN = False # Learn over the shoulder
 ASYNC_HUMAN_TRAIN = False
-PLAY = True # Play only global, without training
-
-# CHANGE THE REWARD
-# CHANGE THE REWARD
-# CHANGE THE REWARD
-# CHANGE THE REWARD
+PLAY = False # Play only global, without training
 
 if sum([HUMAN_TRAIN, ASYNC_HUMAN_TRAIN, PLAY]) > 1:
     raise ValueError
