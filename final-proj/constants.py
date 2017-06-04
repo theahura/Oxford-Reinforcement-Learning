@@ -29,13 +29,13 @@ MAX_GRAD_NORM = 60.0
 CONV_LAYERS = 5
 LSTM_LAYERS = 3 # Not implemented
 FILTER_SHAPE = [3, 3]
-STRIDE = 1
+STRIDE = 2
 OUTPUT_CHANNELS = 32
 LSTM_UNITS = 512
 ADAM = True # Whether to use adamopt or grad descent
 #       A3C Params
 VF_LOSS_CONST = 0.5
-ENT_CONST = 0.1 # Encourage exploration with more entropy
+ENT_CONST = 0.01 # Encourage exploration with more entropy
 LEARNING_RATE = 0.1
 LEARNING_RATE_STEP = 25 # Not implemented.
 LEARNING_RATE_SCALE = 0.99 # Not implemented.
@@ -45,13 +45,13 @@ LAMBDA = 1.0
 INPUT_KEEP_PROB = 0.5 # Dropout for lstm
 OUTPUT_KEEP_PROB = 0.5
 CONV_KEEP_PROB = 0.5 # Dropout for convnet
-REG_CONST = 0.0001 # L2 norm regularization
+REG_CONST = 0.00001 # L2 norm regularization
 
 # Debugging
 DEBUG = True
 GLOBAL_DEBUG = True
 MODEL_DEBUG = False
-WORKER_DEBUG = True
+WORKER_DEBUG = False
 RANDOM_POLICY = False
 CKPT_PATH = 'data/ckpt/'
 LOGDIR = 'data/logs/'
@@ -65,9 +65,14 @@ ENV_STEPS = 100.0*FPS
 # Configs
 HUMAN_TRAIN = False # Learn over the shoulder
 ASYNC_HUMAN_TRAIN = False
-PLAY = False # Play only global, without training
+PLAY = True # Play only global, without training
+
+# CHANGE THE REWARD
+# CHANGE THE REWARD
+# CHANGE THE REWARD
+# CHANGE THE REWARD
 
 if sum([HUMAN_TRAIN, ASYNC_HUMAN_TRAIN, PLAY]) > 1:
     raise ValueError
 
-NUM_WORKERS = 1 if PLAY or HUMAN_TRAIN else 2 if ASYNC_HUMAN_TRAIN else 4
+NUM_WORKERS = 1 if PLAY or HUMAN_TRAIN else 2 if ASYNC_HUMAN_TRAIN else 6

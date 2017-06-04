@@ -261,8 +261,8 @@ class Policy(object):
             var_glob_sum = tf.summary.scalar("model/var_global_norm",
                                              tf.global_norm(global_vars))
             logprob_sum = tf.summary.scalar("model/log_prob",
-                                            tf.reduce_sum(log_prob))
-            prob_sum = tf.summary.scalar("model/prob", tf.reduce_sum(prob))
+                                            tf.reduce_mean(log_prob))
+            prob_sum = tf.summary.scalar("model/prob", tf.reduce_mean(prob))
             act_sum = tf.summary.histogram("model/actions",
                                            tf.argmax(self.ac, 1))
             self.summary_op = tf.summary.merge([pi_sum, vf_sum, ent_sum, si_sum,
