@@ -65,7 +65,7 @@ ENV_STEPS = 100.0*FPS
 # Configs
 HUMAN_TRAIN = False # Learn over the shoulder
 ASYNC_HUMAN_TRAIN = False
-PLAY = False # Play only global, without training
+PLAY = True # Play only global, without training
 
 if sum([HUMAN_TRAIN, ASYNC_HUMAN_TRAIN, PLAY]) > 1:
     raise ValueError
